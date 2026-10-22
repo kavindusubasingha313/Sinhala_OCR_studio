@@ -1,3 +1,13 @@
+# Windows CI failure investigation
+
+The owner supplied a screenshot showing the first two Windows workflow runs failed. The general release-gate summary does not identify the failed step. Direct Actions API access from this cloud environment is blocked by the network proxy (CONNECT 403), so the original failure log remains unavailable.
+
+A code review identified a separate Windows compatibility defect: `atomic_write` reopened the temporary file read-only before calling `os.fsync`. On Windows this ultimately flushes a file handle that requires write access. The file is now reopened with `r+b`, retaining its validated contents while supplying write access. Microsoft documents this requirement for [FlushFileBuffers](https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers). This fix is not yet confirmed as the cause of either failed workflow run.
+
+After the change, all **53 tests passed** on Linux; Ruff and pip dependency checks passed. Windows-target dependency resolution against public PyPI completed, which checks wheel availability but does not execute Windows code or validate installation on the runner. Workflow YAML parsed successfully. The workflow summary now lists failed step IDs to help locate the actual error.
+
+A successful new Windows run and the original failed-step log are still required before declaring the CI problem resolved. No executable build is claimed from this investigation.
+
 # Equation milestone — 2026-10-22
 
 Current checks executed on Debian 13 / Python 3.12.14:

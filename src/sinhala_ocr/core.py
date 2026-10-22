@@ -68,7 +68,9 @@ def atomic_write(destination: Path, writer, validator) -> None:
     try:
         writer(path)
         validator(path)
-        with path.open("rb") as stream:
+        # Windows FlushFileBuffers requires a handle with write access.
+        # r+b retains the validated bytes without truncating the temporary file.
+        with path.open("r+b") as stream:
             os.fsync(stream.fileno())
         os.replace(path, destination)
     finally:

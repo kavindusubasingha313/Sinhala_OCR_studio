@@ -7,7 +7,7 @@
 - Review is whole-document Accept with native editing/undo/redo. Reject, Next Issue, region queue and durable edit history are pending. Approval does not disable editing; edits invalidate approval. OCR replacement is conservatively blocked whenever text exists.
 - Projects reference source paths and do not autosave. Close/import warns to save; no automatic recovery. Project write/export is atomic on supported local filesystems; directory fsync and power-loss durability are not guaranteed. UI prevents source overwrite; low-level save_project callers must also choose a separate path.
 - DOCX contains plain paragraphs and complex-script font settings; no layout reconstruction, actual equations, tables, font detection or verified fallback. The Word reading machine needs a suitable Sinhala font; DOCX fonts are not embedded. Word rendering is unverified.
-- No searchable PDF export or benchmark runner. Windows packaging and CI are configured but unexecuted. Dependency versions reflect this execution date and need a security/compatibility review before release.
+- No searchable PDF export or benchmark runner. The first two Windows CI runs failed; the exact error logs are still unavailable. A Windows atomic-write handle fix is awaiting runner verification. Dependency versions reflect this execution date and need a security/compatibility review before release.
 
 ## Equation-specific limitations
 
