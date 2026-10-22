@@ -58,7 +58,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Package complete offline application
         run: |
-          python -m PyInstaller --noconfirm --clean --onedir --windowed --name SinhalaOCRStudio --paths src --collect-all pytesseract --collect-data sinhala_ocr --add-data "C:\Program Files\Tesseract-OCR;tesseract" scripts/desktop-entry.py *>&1 | Tee-Object logs/pyinstaller.log
+          python -m PyInstaller --noconfirm --clean --onedir --windowed --name SinhalaOCRStudio --paths src --collect-all pytesseract --collect-all ziamath --collect-all ziafont --collect-all latex2mathml --collect-data sinhala_ocr --add-data "C:\Program Files\Tesseract-OCR;tesseract" scripts/desktop-entry.py *>&1 | Tee-Object logs/pyinstaller.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item DOWNLOAD_WINDOWS.md dist/SinhalaOCRStudio/READ_ME_FIRST.md
       - name: Verify packaged launch and bundled OCR/export
@@ -70,7 +70,7 @@ jobs:
           if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Packaged smoke timed out' }
           if (Test-Path packaged-smoke.json) { Move-Item packaged-smoke.json logs/packaged-smoke.json }
           if ($process.ExitCode -ne 0) { throw "Packaged smoke failed: $($process.ExitCode)" }
-          'Packaged launch, Unicode editor, themes, blank OCR and DOCX smoke passed.' | Out-File logs/packaged-result.log
+          'Packaged launch, Unicode editor, themes, blank OCR, equation preview and native OMML export smoke passed.' | Out-File logs/packaged-result.log
       - name: Create experimental ZIP
         run: |
           Compress-Archive -Path dist/SinhalaOCRStudio -DestinationPath "SinhalaOCRStudio-experimental-$env:BUILD_ID.zip"

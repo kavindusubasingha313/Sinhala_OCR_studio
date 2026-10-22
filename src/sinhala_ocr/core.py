@@ -1,5 +1,5 @@
 """Document storage and engine contracts, independent of the interface."""
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Protocol
 import json
@@ -11,6 +11,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from pypdf import PdfReader
 from PIL import Image
+
+from .equations import Equation
 
 
 @dataclass
@@ -40,6 +42,8 @@ class Document:
     source: str
     text: str = ""
     approved: bool = False
+    latex_enabled: bool = False
+    equations: list[Equation] = field(default_factory=list)
 
     def apply_recognition(self, result: Recognition) -> None:
         # Every edit is protected, even before explicit approval.
@@ -74,16 +78,22 @@ def atomic_write(destination: Path, writer, validator) -> None:
 def save_project(document: Document, destination: Path) -> None:
     atomic_write(destination,
                  lambda p: p.write_text(json.dumps(asdict(document), ensure_ascii=False), encoding="utf-8"),
-                 lambda p: Document(**json.loads(p.read_text(encoding="utf-8"))))
+                 lambda p: load_project(p))
 
 
 def load_project(path: Path) -> Document:
-    return Document(**json.loads(path.read_text(encoding="utf-8")))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["equations"] = [Equation(**equation) for equation in data.get("equations", [])]
+    return Document(**data)
 
 
-def export_document(document: Document, destination: Path) -> None:
+def export_document(document: Document, destination: Path, *, image_fallback=False) -> None:
     if Path(document.source).resolve() == destination.resolve():
         raise ValueError("Export cannot overwrite the source document.")
+    if document.equations or "[[eq:" in document.text or destination.suffix.lower() in {".md", ".tex"}:
+        from .equation_export import export_with_equations
+        export_with_equations(document, destination, image_fallback=image_fallback)
+        return
     if destination.suffix.lower() == ".txt":
         def validate(path):
             if path.read_text(encoding="utf-8") != document.text:

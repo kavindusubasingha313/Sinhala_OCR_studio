@@ -23,3 +23,5 @@ Import PNG/JPEG/TIFF/BMP or selectable PDF; edit in the right pane; Accept marks
 No API key is required. Keep private samples, projects and credentials outside source control. Do not change the source document via export.
 
 For nontechnical Windows testing see DOWNLOAD_WINDOWS.md. GitHub Actions provides experimental ZIPs only after a successful Windows run. The package bundles Tesseract and model data, Qt and the Python runtime. No local Python/dependency configuration is required for the tester. Real Helakuru and Word checks remain manual. Tesseract distribution licensing and signing must be reviewed before stable release.
+
+Equation workflow: see LATEX_EQUATIONS.md. The existing setup script installs pinned `latex2mathml`, `ziamath` and `ziafont` dependencies (including local mathematical fonts). No TeX installation, browser or model download is needed for editing/preview. Automatic equation recognition remains uninstalled. Windows CI packaging includes these resource packages. Run the same pytest/static checks; the executable smoke now includes an equation preview and native OMML export.

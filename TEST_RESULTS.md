@@ -1,4 +1,24 @@
-# Executed checks — 2026-10-22
+# Equation milestone — 2026-10-22
+
+Current checks executed on Debian 13 / Python 3.12.14:
+
+- `bash scripts/setup-cloud.sh`: successful repeat installation with pinned equation dependencies, model checksum verification, tests, static checks and dependency consistency.
+- Final `TESSDATA_PREFIX=/workspace/ocr-tessdata QT_QPA_PLATFORM=offscreen /workspace/ocr-venv/bin/pytest -q`: **53 passed**, no skipped tests.
+- `ruff check .` and `pip check`: passed; no broken requirements.
+- Headless desktop `--smoke-test`: exit 0, including standard OCR, equation preview and native OMML DOCX export. Smoke settings are isolated from user preferences.
+- Equation benchmark CLI: executed on two deliberately synthetic predictions; asserted exact-match rate 0.5 and character error rate 1/6. This validates scoring, not recognition accuracy.
+- Windows workflow YAML parsed locally; collection rules now include renderer/font packages. No Windows runner or Windows executable execution is claimed.
+- Local Qt equation-editor screenshot inspected for vector, fraction and matrix preview. Preview now preserves aspect ratio; this is Linux offscreen evidence, not Word/Windows verification.
+
+New regressions exercise OFF never constructing an equation engine, ON dispatch through an injected test adapter, honest missing-model status, preferred/per-document modes, source crop persistence after original-file removal, old-project compatibility, marker integrity, selected-text preservation, source undo/redo/restore, acceptance/rejection, syntax errors, formula rendering, native OMML structures/placement, explicit original-crop fallback, no text boxes and atomic destination protection. The original 12 tests remain passing.
+
+Actual Sinhala A/L Physics equation recognition, optional offline/cloud models, equation-aware PDF output, Microsoft Word 2019 rendering/editability and Windows 10/11/Helakuru tests remain **unrun or unimplemented**, as detailed in LATEX_EQUATIONS.md. Synthetic formula fixtures are not real examination pages or model outputs.
+
+The first equation regression run exposed malformed-argument handling, a matrix-token parsing error and defects in an evaluated third-party OMML converter. These were corrected; the third-party converter was removed and replaced with a conservative project-owned converter. No failing cases were skipped or assertions disabled. An export preflight now distinguishes unaccepted supported equations from unsupported conversions eligible for crop fallback.
+
+## Earlier Stage 1 execution record
+
+### Executed checks — 2026-10-22
 
 Environment: Debian 13 Linux, Python 3.12.14, PySide6 6.8.3, Tesseract 5.5.0, official tessdata_fast 4.1.0 Sinhala model plus installed English model.
 

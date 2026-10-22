@@ -11,3 +11,12 @@
 - [ ] Packaged installer, signing, license notices, uninstall and clean offline computer.
 
 Record OS build, Helakuru version, input mode, steps, screenshots without private documents, and pass/fail evidence. No item has been verified in this Linux environment.
+
+## Equation gate — all unverified on real Windows
+
+- [ ] Microsoft Word 2019: all physics equation fixtures open without repair; native editing and save/reopen retain fractions, powers, indices, roots, Greek letters, integral/summation limits, vectors and matrices.
+- [ ] Inline/display positioning among Sinhala-English paragraphs; no unwanted text boxes; clearly labelled non-editable original-image fallbacks.
+- [ ] LaTeX OFF default and saved preference; per-project mode; OFF preserves approved and manually edited equations after reopen.
+- [ ] Region selection and preserved crops at multiple DPI settings; no equation preview distortion; unsupported-command and syntax-error reporting.
+- [ ] Equation source Undo/Redo/Restore Original; genuine Helakuru input in surrounding text; document and equation edits survive explicit Save project.
+- [ ] Packaged executable previews and exports equations entirely offline with bundled mathematical fonts.

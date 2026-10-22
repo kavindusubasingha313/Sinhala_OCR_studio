@@ -1,17 +1,20 @@
 """Qt desktop shell. Native text editing preserves IME composition handling."""
 import sys
 import os
+from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, QSettings, QThreadPool, QTimer, Signal, Qt
 from PySide6.QtGui import QAction, QFont, QFontDatabase, QImageReader, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QListWidget,
+    QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel, QListWidget,
     QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea,
     QSplitter, QTextEdit, QToolBar, QVBoxLayout, QWidget,
 )
 
 from .diagnostics import Diagnostics
+from .equations import Equation, EquationError, equation_crop, recognize_document
+from .equation_ui import EquationEditor, RegionDialog
 
 from .core import (Document, TesseractEngine, export_document, import_document,
                    load_project, save_project)
@@ -77,11 +80,30 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(root)
         heading = QLabel("DOCUMENT WORKSPACE   /   Offline · Sinhala + English")
         layout.addWidget(heading)
+        equation_controls = QHBoxLayout()
+        self.latex_toggle = QCheckBox("LaTeX OFF")
+        self.latex_toggle.setChecked(self.settings.value("latex_enabled", False, type=bool))
+        self.latex_toggle.setText("LaTeX ON" if self.latex_toggle.isChecked() else "LaTeX OFF")
+        self.latex_toggle.setToolTip("Enable equation workflows for this document. Turning OFF preserves saved equations. Automatic equation OCR is not yet installed.")
+        self.latex_toggle.toggled.connect(self.set_latex_mode)
+        equation_controls.addWidget(self.latex_toggle)
+        for title, callback in [("Add equation", self.add_equation), ("Mark equation region", self.mark_equation), ("Edit selected equation", self.edit_equation), ("Insert equation marker", self.insert_equation_marker)]:
+            button = QPushButton(title)
+            button.clicked.connect(callback)
+            equation_controls.addWidget(button)
+        layout.addLayout(equation_controls)
         split = QSplitter()
         self.pages = QListWidget()
         self.pages.setMaximumWidth(210)
         self.pages.addItem("Import a document to begin")
-        split.addWidget(self.pages)
+        navigation = QWidget()
+        navigation_layout = QVBoxLayout(navigation)
+        navigation_layout.addWidget(self.pages)
+        navigation_layout.addWidget(QLabel("Equations — double-click to edit"))
+        self.equation_list = QListWidget()
+        self.equation_list.itemDoubleClicked.connect(lambda _: self.edit_equation())
+        navigation_layout.addWidget(self.equation_list)
+        split.addWidget(navigation)
         preview_panel = QWidget()
         preview_layout = QVBoxLayout(preview_panel)
         controls = QHBoxLayout()
@@ -111,6 +133,72 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ready · Cloud uploads disabled · Stage 1 foundation")
         self.set_theme(self.theme.currentText())
         QApplication.styleHints().colorSchemeChanged.connect(lambda _: self.set_theme(self.theme.currentText()))
+
+    def set_latex_mode(self, enabled):
+        self.settings.setValue("latex_enabled", enabled)
+        self.latex_toggle.setText("LaTeX ON" if enabled else "LaTeX OFF")
+        if self.document:
+            self.document.latex_enabled = enabled
+        self.statusBar().showMessage("LaTeX ON · Manual equation editing available; automatic equation recognition not installed" if enabled else "LaTeX OFF · Standard OCR; existing equations preserved")
+
+    def refresh_equations(self):
+        self.equation_list.clear()
+        if self.document:
+            for index, equation in enumerate(self.document.equations, 1):
+                self.equation_list.addItem(f"{index}. {equation.placement} · {equation.status}")
+
+    def attach_equation(self, equation):
+        self.document.equations.append(equation)
+        self.insert_marker_at_cursor(equation.marker)
+        self.refresh_equations()
+        self.equation_list.setCurrentRow(len(self.document.equations) - 1)
+
+    def insert_marker_at_cursor(self, marker):
+        cursor = self.editor.textCursor()
+        cursor.setPosition(cursor.selectionEnd())
+        self.editor.setTextCursor(cursor)
+        self.editor.insertPlainText(marker)
+
+    def add_equation(self):
+        if not self.document or self.busy:
+            return
+        if not self.document.latex_enabled:
+            self.error("Turn LaTeX ON to add an equation. Existing equations remain editable when OFF.")
+            return
+        self.attach_equation(Equation())
+        self.edit_equation()
+
+    def mark_equation(self):
+        if not self.document or self.busy:
+            return
+        if not self.document.latex_enabled or self.pixmap.isNull():
+            self.error("Turn LaTeX ON and import an image to mark an equation. PDF region selection is not yet available.")
+            return
+        dialog = RegionDialog(self.pixmap, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            try:
+                equation = equation_crop(Path(self.document.source), dialog.selector.source_bbox())
+                self.attach_equation(equation)
+                self.edit_equation()
+            except (OSError, ValueError) as error:
+                self.error(str(error))
+
+    def edit_equation(self):
+        row = self.equation_list.currentRow()
+        if self.document and 0 <= row < len(self.document.equations):
+            EquationEditor(self.document.equations[row], self).exec()
+            self.document.approved = False
+            self.refresh_equations()
+            self.equation_list.setCurrentRow(row)
+
+    def insert_equation_marker(self):
+        row = self.equation_list.currentRow()
+        if self.document and 0 <= row < len(self.document.equations):
+            marker = self.document.equations[row].marker
+            if marker in self.editor.toPlainText():
+                self.error("This equation already has a marker. Move that marker to change its position.")
+            else:
+                self.insert_marker_at_cursor(marker)
 
     def set_theme(self, theme):
         self.settings.setValue("theme", theme)
@@ -169,13 +257,22 @@ class MainWindow(QMainWindow):
             return
         name, _ = QFileDialog.getOpenFileName(self, "Import document", "", "Documents (*.png *.jpg *.jpeg *.tif *.tiff *.bmp *.pdf)")
         if name:
-            self.background(lambda: import_document(Path(name)), self.display_document)
+            preferred_mode = self.settings.value("latex_enabled", False, type=bool)
+            def imported(document):
+                document.latex_enabled = preferred_mode
+                self.display_document(document)
+            self.background(lambda: import_document(Path(name)), imported)
 
     def display_document(self, document):
         approved = document.approved
         self.document = document
         self.editor.setPlainText(document.text)
         self.document.approved = approved
+        self.latex_toggle.blockSignals(True)
+        self.latex_toggle.setChecked(document.latex_enabled)
+        self.latex_toggle.setText("LaTeX ON" if document.latex_enabled else "LaTeX OFF")
+        self.latex_toggle.blockSignals(False)
+        self.refresh_equations()
         self.pages.clear()
         self.pages.addItem(Path(document.source).name)
         self.zoom = 1.0
@@ -208,11 +305,18 @@ class MainWindow(QMainWindow):
             self.error("Scanned PDF OCR is planned for Stage 2; selectable text is imported directly.")
             return
         def complete(result):
-            self.document.apply_recognition(result)
+            try:
+                self.document.apply_recognition(result.text_result)
+            except ValueError as error:
+                self.error(str(error))
+                return
             self.editor.setPlainText(self.document.text)
-            self.statusBar().showMessage("OCR complete · All text requires review; confidence unavailable")
+            for equation in result.equations:
+                self.attach_equation(equation)
+            self.statusBar().showMessage(result.notice or "OCR complete · All text requires review; confidence unavailable")
         source = Path(self.document.source)
-        self.background(lambda: TesseractEngine().recognize(source), complete)
+        latex_enabled = self.document.latex_enabled
+        self.background(lambda: recognize_document(source, TesseractEngine(), latex_enabled), complete)
 
     def accept(self):
         if self.document:
@@ -242,12 +346,28 @@ class MainWindow(QMainWindow):
                 self.error(str(error))
 
     def export(self):
-        if not self.document:
+        if not self.document or self.busy:
             return
-        name, _ = QFileDialog.getSaveFileName(self, "Export text", "document.docx", "Word (*.docx);;Unicode text (*.txt)")
+        name, _ = QFileDialog.getSaveFileName(self, "Export document", "document.docx", "Word (*.docx);;Unicode text (*.txt);;Markdown with equations (*.md);;LaTeX source fragment (*.tex)")
         if name:
-            snapshot = Document(self.document.source, self.document.text, self.document.approved)
-            self.background(lambda: export_document(snapshot, Path(name)), lambda _: self.statusBar().showMessage("Export validated and saved"))
+            snapshot = deepcopy(self.document)
+            image_fallback = False
+            if snapshot.equations and Path(name).suffix.lower() == ".docx":
+                from .equation_export import editable_equation_errors
+                try:
+                    errors = editable_equation_errors(snapshot)
+                except EquationError as error:
+                    self.error(str(error))
+                    return
+                if errors:
+                    detail = "\n".join(message for _, message in errors)
+                    if not all(eq.image_png for eq, _ in errors):
+                        self.error(detail + "\nCorrect and Accept the equations or export LaTeX/Markdown source.")
+                        return
+                    image_fallback = QMessageBox.question(self, "Equation export needs review", detail + "\nUse original equation crops as clearly labelled non-editable images for unsupported conversions? Supported equations must still be Accepted.", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes
+                    if not image_fallback:
+                        return
+            self.background(lambda: export_document(snapshot, Path(name), image_fallback=image_fallback), lambda _: self.statusBar().showMessage("Export validated and saved"))
 
     def closeEvent(self, event):
         if self.safe_to_replace():
@@ -261,6 +381,12 @@ def main():
         bundled = Path(sys._MEIPASS) / "tesseract"
         os.environ["PATH"] = str(bundled) + os.pathsep + os.environ.get("PATH", "")
         os.environ["TESSDATA_PREFIX"] = str(bundled / "tessdata")
+    smoke_settings = None
+    if "--smoke-test" in sys.argv:
+        import tempfile
+        smoke_settings = tempfile.TemporaryDirectory()
+        QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+        QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.UserScope, smoke_settings.name)
     app = QApplication(sys.argv)
     font_path = Path(__file__).parent / "assets" / "NotoSansSinhala.ttf"
     QFontDatabase.addApplicationFont(str(font_path))
@@ -283,6 +409,12 @@ def main():
                     assert window.editor.toPlainText() == "සිංහල English x² = ½"
                     for theme in ["Dark", "Light"]:
                         window.theme.setCurrentText(theme)
+                    window.latex_toggle.setChecked(True)
+                    equation = Equation(latex=r"E=\frac{1}{2}mv^2", placement="inline")
+                    equation.accept()
+                    window.attach_equation(equation)
+                    preview = EquationEditor(equation, window)
+                    assert preview.update_preview()
                     export_document(window.document, Path(folder) / "smoke.docx")
                 window.diagnostics.record("smoke_passed")
                 Path("packaged-smoke.json").write_text('{"status": "passed"}', encoding="utf-8")
@@ -292,7 +424,10 @@ def main():
                 Path("packaged-smoke.json").write_text(json.dumps({"status": "failed", "error_type": type(error).__name__}), encoding="utf-8")
                 app.exit(1)
         QTimer.singleShot(200, smoke)
-    return app.exec()
+    result = app.exec()
+    if smoke_settings:
+        smoke_settings.cleanup()
+    return result
 
 
 if __name__ == "__main__":

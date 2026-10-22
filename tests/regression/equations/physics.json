@@ -1,0 +1,11 @@
+[
+  {"category": "fraction", "context": "චාලක ශක්තිය", "latex": "E_k=\\frac{1}{2}mv^2", "omml": "f"},
+  {"category": "subscript", "context": "ප්‍රවේගය", "latex": "v_0=12", "omml": "sSub"},
+  {"category": "power", "context": "ශක්තිය", "latex": "E=mc^2", "omml": "sSup"},
+  {"category": "root", "context": "වේගය", "latex": "v=\\sqrt{2gh}", "omml": "rad"},
+  {"category": "greek", "context": "කෝණික සංඛ්‍යාතය", "latex": "\\omega=2\\pi f", "omml": "r"},
+  {"category": "integral", "context": "කාර්යය", "latex": "W=\\int_0^a F(x)\\,dx", "omml": "sSubSup"},
+  {"category": "sum", "context": "සමස්ත බලය", "latex": "F=\\sum_{i=1}^{n} F_i", "omml": "limUpp"},
+  {"category": "vector", "context": "බලය", "latex": "\\vec{F}=m\\vec{a}", "omml": "acc"},
+  {"category": "matrix", "context": "න්‍යාසය", "latex": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}", "omml": "m"}
+]
