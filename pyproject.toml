@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sinhala-ocr-studio"
+version = "0.1.0"
+description = "Offline-first Sinhala document workspace"
+requires-python = ">=3.11"
+dependencies = ["PySide6==6.8.3", "Pillow==11.2.1", "pypdf==5.4.0", "python-docx==1.1.2", "pytesseract==0.3.13"]
+
+[project.optional-dependencies]
+dev = ["pytest==8.3.5", "ruff==0.11.5"]
+
+[project.scripts]
+sinhala-ocr-studio = "sinhala_ocr.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.setuptools.package-data]
+sinhala_ocr = ["assets/*.ttf", "assets/OFL.txt"]

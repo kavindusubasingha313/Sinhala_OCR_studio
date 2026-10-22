@@ -1,0 +1,1 @@
+"""Sinhala OCR Studio."""

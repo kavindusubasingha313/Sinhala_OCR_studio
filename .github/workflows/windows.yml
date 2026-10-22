@@ -1,0 +1,102 @@
+name: Windows experimental build
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Build identity
+        run: |
+          New-Item -ItemType Directory -Force logs, test-results | Out-Null
+          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          "BUILD_ID=$version-$env:GITHUB_SHA" >> $env:GITHUB_ENV
+      - name: Install Python dependencies
+        run: |
+          python -m pip install -r requirements-lock.txt *>&1 | Tee-Object logs/install.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install --no-deps -e .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install pyinstaller==6.12.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install offline OCR runtime
+        run: |
+          choco install tesseract --yes --no-progress *>&1 | Tee-Object logs/tesseract-install.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $root = 'C:\Program Files\Tesseract-OCR'
+          if (!(Test-Path "$root\tesseract.exe")) { throw 'Tesseract executable missing' }
+          Invoke-WebRequest https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/4.1.0/sin.traineddata -OutFile "$root\tessdata\sin.traineddata"
+          $hash = (Get-FileHash "$root\tessdata\sin.traineddata" -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'bc75c6df2375a30c9f7e759fa7d4b58ae3ecf9ce72668a702d01acb13e551422') { throw 'Sinhala model checksum mismatch' }
+          if (!(Test-Path "$root\tessdata\eng.traineddata")) { throw 'English model missing' }
+          "$root" >> $env:GITHUB_PATH
+          "TESSDATA_PREFIX=$root\tessdata" >> $env:GITHUB_ENV
+      - name: Static checks
+        run: |
+          ruff check . *>&1 | Tee-Object logs/static.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Unit, OCR integration, export regression and GUI tests
+        run: |
+          python -m pytest -v --junitxml=test-results/windows.xml *>&1 | Tee-Object logs/pytest.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package complete offline application
+        run: |
+          python -m PyInstaller --noconfirm --clean --onedir --windowed --name SinhalaOCRStudio --paths src --collect-all pytesseract --collect-data sinhala_ocr --add-data "C:\Program Files\Tesseract-OCR;tesseract" scripts/desktop-entry.py *>&1 | Tee-Object logs/pyinstaller.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item DOWNLOAD_WINDOWS.md dist/SinhalaOCRStudio/READ_ME_FIRST.md
+      - name: Verify packaged launch and bundled OCR/export
+        run: |
+          # Remove external OCR paths so this check exercises the bundled runtime.
+          $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notlike '*Tesseract*' }) -join ';'
+          Remove-Item Env:TESSDATA_PREFIX -ErrorAction SilentlyContinue
+          $process = Start-Process dist/SinhalaOCRStudio/SinhalaOCRStudio.exe -ArgumentList '--smoke-test' -PassThru -RedirectStandardOutput logs/packaged-stdout.log -RedirectStandardError logs/packaged-stderr.log
+          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Packaged smoke timed out' }
+          if (Test-Path packaged-smoke.json) { Move-Item packaged-smoke.json logs/packaged-smoke.json }
+          if ($process.ExitCode -ne 0) { throw "Packaged smoke failed: $($process.ExitCode)" }
+          'Packaged launch, Unicode editor, themes, blank OCR and DOCX smoke passed.' | Out-File logs/packaged-result.log
+      - name: Create experimental ZIP
+        run: |
+          Compress-Archive -Path dist/SinhalaOCRStudio -DestinationPath "SinhalaOCRStudio-experimental-$env:BUILD_ID.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SinhalaOCRStudio-experimental-windows-${{ env.BUILD_ID }}
+          path: SinhalaOCRStudio-experimental-*.zip
+          if-no-files-found: error
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SinhalaOCRStudio-test-results-${{ env.BUILD_ID }}
+          path: test-results/
+          if-no-files-found: warn
+      - name: Upload debugging logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SinhalaOCRStudio-debug-logs-${{ env.BUILD_ID }}
+          path: |
+            logs/
+            build/SinhalaOCRStudio/warn-*.txt
+          if-no-files-found: warn
+      - name: Report release gate
+        if: always()
+        run: |
+          "## Experimental Windows build" >> $env:GITHUB_STEP_SUMMARY
+          "Job status: ${{ job.status }}. Successful automation does not establish Helakuru or Microsoft Word compatibility. No stable release is published by this workflow. Inspect test/log artifacts and complete WINDOWS_COMPATIBILITY_CHECKLIST.md." >> $env:GITHUB_STEP_SUMMARY
