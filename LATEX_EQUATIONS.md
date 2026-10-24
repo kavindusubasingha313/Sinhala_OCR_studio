@@ -1,3 +1,11 @@
+# Version 0.2.0 update
+
+Advanced OCR now optionally requests separate equation sources from OpenAI when LaTeX is ON, behind per-page consent and OS-vault credentials. This is a cloud adapter, not an offline mathematical model. Provider responses are mocked in automated tests; live accuracy remains unverified. Compare with the original page and Accept each equation before native Word export.
+
+PDF pages now render, and manual region selection works on the selected rendered PDF/image page. Projects preserve equations per page. The editor shows readable ⟦Equation N⟧ references while retaining stable IDs in project data. “Convert selected LaTeX to equation” creates an editable object from source text. Native OMML remains the default; a supported expression is not replaced by an image. Word font is explicitly Cambria Math. No actual Word 2019 verification is claimed.
+
+The following initial-milestone record describes the earlier behavior and dialect. Its statements that PDF rendering/cloud adapters are absent are superseded by this update. Offline neural recognition, real Sinhala A/L Physics evaluation and equation-aware PDF export remain pending.
+
 # LaTeX equation workflow and release gates
 
 The first equation milestone adds manual entry, region capture, live local preview and project persistence. It also provides an **experimental native OMML export foundation** for the explicitly tested subset. This is not a declaration that mathematical OCR, Word visual fidelity or the equation release gate is complete.

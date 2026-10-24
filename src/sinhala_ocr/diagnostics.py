@@ -4,6 +4,7 @@ import platform
 from collections import deque
 from zipfile import ZipFile
 
+from . import __version__
 from .core import atomic_write
 
 
@@ -17,7 +18,7 @@ class Diagnostics:
             self.events.append(event)
 
     def export(self, path):
-        report = {"application": "Sinhala OCR Studio", "version": "0.1.0",
+        report = {"application": "Sinhala OCR Studio", "version": __version__,
                   "os": platform.system(), "os_release": platform.release(),
                   "python": platform.python_version(), "diagnostics_enabled": self.enabled,
                   "events": list(self.events)}

@@ -1,3 +1,24 @@
+# Version 0.2.0 workspace validation — 2026-10-24
+
+Executed on Debian Linux / Python 3.12 / PySide6 6.8.3:
+
+- **71 tests passed**, no skipped tests. This includes the earlier regression suite plus page rendering/navigation and actual viewport pixels in both themes, multi-frame TIFF, document switching, page-specific Undo/Redo and corrections, closing/cancellation, project round trips, native OMML across multiple pages, readable equation references, prior-result history, and simulated Sinhala composition.
+- The IME regression sends successive preedit states followed by one commit of **වස්තුවක්** and checks exact output with no duplicates plus Undo/Redo. This is **not actual Helakuru verification**. The owner’s repeated-character/vowel-sign issue still needs a Windows retest.
+- AI tests use mock transport: no request without consent, no request beyond the daily cap, one-page payload and bounded output, LaTeX OFF behavior, equation-anchor validation, malformed/incomplete response rejection and refusal of plaintext credential backends. **No live API request or AI accuracy evaluation was run.**
+- `bash scripts/setup-cloud.sh`: successful installation with pinned PDFium/keyring dependencies, Sinhala-model checksum, full tests, static checks and dependency consistency.
+- `ruff check .`, `pip check`, `git diff --check`: passed.
+- Source `--smoke-test`: passed, including multipage PDF rendering, switching document tabs, Sinhala text, baseline OCR, equation preview and native OMML output.
+- PyInstaller 6.12.0 **Linux** directory build: completed successfully. The frozen application ran `--smoke-test` from a separate temporary working directory and wrote `{"status": "passed"}`. It included PDFium, fonts, Tesseract/language data and provider-support modules. This does not establish that the new Windows build succeeds.
+- Actual light/dark workspace screenshots were inspected using a clearly synthetic physics document. Screenshots are UI evidence, not OCR accuracy evidence.
+
+The owner previously supplied a successful Windows Actions result for **a6e0ef1**. The new 0.2.0 Windows workflow has been updated to collect PDFium and Windows credential backend resources, and to check packaged page/tab/equation functionality and credential-backend loading without reading/storing a key. **The new Windows run, real Helakuru, live provider request, Word 2019 editability/rendering and high-DPI behavior remain unverified here.**
+
+The default equation export regression checks true `m:oMath`/fraction structures and zero `w:drawing`/text boxes, plus a Cambria Math setting. This establishes file structure, not Word’s visual output. Unsupported image fallback remains an explicit user choice.
+
+The records below are historical; their earlier “not implemented” statements are superseded by the current status and KNOWN_ISSUES.md.
+
+---
+
 # Windows CI failure investigation
 
 The owner supplied a screenshot showing the first two Windows workflow runs failed. The general release-gate summary does not identify the failed step. Direct Actions API access from this cloud environment is blocked by the network proxy (CONNECT 403), so the original failure log remains unavailable.

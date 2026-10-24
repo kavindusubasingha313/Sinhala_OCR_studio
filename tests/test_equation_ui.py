@@ -93,8 +93,8 @@ def test_new_import_uses_preference_and_markers_preserve_selected_text(tmp_path,
     source = tmp_path / "new.png"
     Image.new("RGB", (20, 20)).save(source)
     monkeypatch.setattr(window, "safe_to_replace", lambda: True)
-    monkeypatch.setattr(app_module.QFileDialog, "getOpenFileName", lambda *args: (str(source), ""))
-    monkeypatch.setattr(window, "background", lambda operation, callback: callback(operation()))
+    monkeypatch.setattr(app_module.QFileDialog, "getOpenFileNames", lambda *args: ([str(source)], ""))
+    monkeypatch.setattr(window, "background", lambda operation, callback, **kwargs: None if kwargs.get("exclusive") is False else callback(operation()))
     window.open_document()
     assert window.document.latex_enabled
     window.editor.setPlainText("සිංහල original")

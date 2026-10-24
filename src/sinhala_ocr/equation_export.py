@@ -100,6 +100,15 @@ def export_with_equations(document, destination, *, image_fallback=False):
 
     def write(path):
         word = WordDocument()
+        math_properties = word.settings.element.find(qn("m:mathPr"))
+        if math_properties is None:
+            math_properties = OxmlElement("m:mathPr")
+            word.settings.element.insert_element_before(math_properties, "w:attachedSchema", "w:themeFontLang", "w:clrSchemeMapping", "w:decimalSymbol", "w:listSeparator")
+        math_font = math_properties.find(qn("m:mathFont"))
+        if math_font is None:
+            math_font = OxmlElement("m:mathFont")
+            math_properties.insert(0, math_font)
+        math_font.set(qn("m:val"), "Cambria Math")
         paragraph = word.add_paragraph()
         for part in parts:
             if isinstance(part, str):

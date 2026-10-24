@@ -9,7 +9,6 @@ import tempfile
 from docx import Document as WordDocument
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from pypdf import PdfReader
 from PIL import Image
 
 from .equations import Equation
@@ -38,12 +37,46 @@ class TesseractEngine:
 
 
 @dataclass
+class DocumentPage:
+    source_index: int = 0
+    text: str = ""
+    approved: bool = False
+    equations: list[Equation] = field(default_factory=list)
+    history: list[dict] = field(default_factory=list)
+
+
+@dataclass
 class Document:
     source: str
     text: str = ""
     approved: bool = False
     latex_enabled: bool = False
     equations: list[Equation] = field(default_factory=list)
+    pages: list[DocumentPage] = field(default_factory=list)
+    active_page: int = 0
+
+    def capture_page(self):
+        if self.pages:
+            page = self.pages[self.active_page]
+            page.text, page.approved, page.equations = self.text, self.approved, self.equations
+
+    def activate_page(self, index):
+        if not 0 <= index < len(self.pages):
+            raise ValueError("Page does not exist.")
+        if index != self.active_page:
+            self.capture_page()
+        self.active_page = index
+        page = self.pages[index]
+        self.text, self.approved, self.equations = page.text, page.approved, page.equations
+
+    def for_export(self):
+        from copy import deepcopy
+        self.capture_page()
+        if not self.pages:
+            return deepcopy(self)
+        return Document(self.source, "\n\n".join(page.text for page in self.pages),
+                        all(page.approved for page in self.pages), self.latex_enabled,
+                        deepcopy([eq for page in self.pages for eq in page.equations]))
 
     def apply_recognition(self, result: Recognition) -> None:
         # Every edit is protected, even before explicit approval.
@@ -53,12 +86,8 @@ class Document:
 
 
 def import_document(path: Path) -> Document:
-    if path.suffix.lower() == ".pdf":
-        reader = PdfReader(path)
-        return Document(str(path), "\n\n".join(page.extract_text() or "" for page in reader.pages))
-    with Image.open(path) as image:
-        image.verify()
-    return Document(str(path))
+    from .documents import import_pages
+    return import_pages(path)
 
 
 def atomic_write(destination: Path, writer, validator) -> None:
@@ -78,6 +107,9 @@ def atomic_write(destination: Path, writer, validator) -> None:
 
 
 def save_project(document: Document, destination: Path) -> None:
+    if Path(document.source).resolve() == destination.resolve():
+        raise ValueError("Project cannot overwrite the original source.")
+    document.capture_page()
     atomic_write(destination,
                  lambda p: p.write_text(json.dumps(asdict(document), ensure_ascii=False), encoding="utf-8"),
                  lambda p: load_project(p))
@@ -86,10 +118,15 @@ def save_project(document: Document, destination: Path) -> None:
 def load_project(path: Path) -> Document:
     data = json.loads(path.read_text(encoding="utf-8"))
     data["equations"] = [Equation(**equation) for equation in data.get("equations", [])]
-    return Document(**data)
+    data["pages"] = [DocumentPage(**{**page, "equations": [Equation(**eq) for eq in page.get("equations", [])]}) for page in data.get("pages", [])]
+    document = Document(**data)
+    if document.pages:
+        document.activate_page(document.active_page)
+    return document
 
 
 def export_document(document: Document, destination: Path, *, image_fallback=False) -> None:
+    document = document.for_export()
     if Path(document.source).resolve() == destination.resolve():
         raise ValueError("Export cannot overwrite the source document.")
     if document.equations or "[[eq:" in document.text or destination.suffix.lower() in {".md", ".tex"}:

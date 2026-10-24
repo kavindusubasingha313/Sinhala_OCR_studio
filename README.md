@@ -1,7 +1,13 @@
 # Sinhala OCR Studio
 
-An offline-first Sinhala-English desktop OCR application under development. Stage 1 provides a PySide6 document workspace and tested persistence/export foundations. It is not production-ready and has no demonstrated accuracy advantage over other OCR products.
+Experimental Sinhala-English desktop OCR for Windows, built with Python and PySide6. Version 0.2.0 provides document tabs, multipage PDF/photo previews, native Unicode editing, page-level correction history, manual LaTeX editing and native Word equation export.
 
-See [SETUP.md](SETUP.md), [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [TEST_RESULTS.md](TEST_RESULTS.md), and [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+Standard OCR runs offline. Advanced OCR optionally uses an OpenAI API account after per-page consent; it is not enabled by default. No superior-accuracy or production-readiness claim is made. Real Helakuru and Word 2019 verification remain required.
 
-[LaTeX equation editing and export](LATEX_EQUATIONS.md) now adds a saved ON/OFF mode, manual region/editor workflow, offline preview and experimental native Word equation export. Automatic equation recognition remains a later milestone.
+- [Download the Windows build](DOWNLOAD_WINDOWS.md)
+- [Use the workspace / development setup](SETUP.md)
+- [Development status](DEVELOPMENT_STATUS.md)
+- [Architecture](ARCHITECTURE.md)
+- [Actual test results](TEST_RESULTS.md)
+- [Known issues](KNOWN_ISSUES.md)
+- [Equation details](LATEX_EQUATIONS.md)

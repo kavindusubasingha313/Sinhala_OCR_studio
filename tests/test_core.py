@@ -57,7 +57,10 @@ def test_source_cannot_be_overwritten(tmp_path):
 def test_image_import(tmp_path):
     path = tmp_path / "image.png"
     Image.new("RGB", (30, 30), "white").save(path)
-    assert import_document(path) == Document(str(path))
+    imported = import_document(path)
+    assert imported.source == str(path)
+    assert imported.text == ""
+    assert len(imported.pages) == 1
 
 
 def test_reject_unsupported_export(tmp_path):
