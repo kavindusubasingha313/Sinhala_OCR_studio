@@ -174,9 +174,12 @@ class MainWindow(QMainWindow):
         text_layout = QVBoxLayout(text_panel)
         text_layout.setContentsMargins(0, 8, 0, 0)
         editing = row(button("Undo", lambda: self.editor.undo()), button("Redo", lambda: self.editor.redo()),
-                      button("Sinhala typing", self.keyboard_settings))
+                      button("Keyboard check", self.keyboard_settings),
+                      button("Saved words", self.saved_words))
         editing.addStretch()
         text_layout.addLayout(editing)
+        if sys.platform == "win32":
+            text_layout.addWidget(button("Windows Sinhala editor · type with Helakuru", self.windows_sinhala_editor, "primary"))
         self.editor = UnicodeEditor()
         self.editor.textChanged.connect(self.edited)
         text_layout.addWidget(self.editor, 1)
@@ -247,6 +250,43 @@ class MainWindow(QMainWindow):
 
     def keyboard_settings(self):
         KeyboardDialog(self.settings, self.apply_editor_font, self).exec()
+        self.editor.setFocus()
+
+    def windows_sinhala_editor(self):
+        if not self.document or self.busy:
+            return
+        self.commit_input()
+        from .windows_input import WindowsInputDialog
+        original = self.editor.toPlainText()
+        try:
+            dialog = WindowsInputDialog(original, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # One Qt undo command; approved text changes only after Apply.
+                if self.editor.toPlainText() != original:
+                    self.error("The page changed while typing. Your native editor result was not applied.")
+                    return
+                if dialog.result_text != original:
+                    cursor = self.editor.textCursor()
+                    cursor.select(cursor.SelectionType.Document)
+                    cursor.insertText(dialog.result_text)
+                    self.editor.setTextCursor(cursor)
+        except (ValueError, RuntimeError, OSError) as error:
+            self.error(str(error))
+        self.editor.setFocus()
+
+    def saved_words(self):
+        from .word_memory import WordMemory, WordMemoryDialog
+        if self.busy:
+            return
+        self.commit_input()
+        cursor = self.editor.textCursor()
+        try:
+            dialog = WordMemoryDialog(WordMemory(), cursor.selectedText(), self)
+            if dialog.exec() == QDialog.DialogCode.Accepted and self.document:
+                cursor.insertText(dialog.chosen)
+                self.editor.setTextCursor(cursor)
+        except (ValueError, OSError) as error:
+            self.error("Personal words could not be loaded. Existing files were preserved. " + str(error))
         self.editor.setFocus()
 
     def set_latex_mode(self, enabled):
@@ -838,6 +878,14 @@ def smoke_test(app, window):
             if sys.platform == "win32":
                 from .advanced_ocr import CredentialStore
                 CredentialStore().backend()  # Check packaging only; do not read/store credentials.
+                if app.platformName() == "windows":
+                    from .windows_input import WindowsInputDialog
+                    native = WindowsInputDialog("වස්තුවක්\nසිංහල x²", window)
+                    native.show()
+                    app.processEvents()
+                    assert native.control.text() == "වස්තුවක්\nසිංහල x²"
+                    native.accept()
+                    assert native.result_text == "වස්තුවක්\nසිංහල x²"
             pdf = Path(folder) / "pages.pdf"
             writer = PdfWriter()
             writer.add_blank_page(300, 400)

@@ -1,6 +1,6 @@
 # Setup and use
 
-For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.1** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
+For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.2** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
 
 ## Workspace
 
@@ -10,9 +10,13 @@ For a packaged Windows build, Python and Tesseract do not need separate installa
 4. Review the suggestion before applying it. Applying a result saves the prior page in project history; **More → Restore previous OCR result** can recover it. Manual edits/Undo/Redo remain with each page while switching tabs.
 5. **Save project** saves all pages of the active document. Close a tab using its ×; modified tabs offer Save, Discard or Cancel. **Export document** includes all pages of that tab.
 
-## Sinhala input
+## Sinhala input and remembered words
 
-Click inside the **Text editor** and select the installed Helakuru Sinhala input mode in Windows. The application does not install a keyboard. **Sinhala typing** or **More → Keyboard & Sinhala font** opens a test panel with Noto Sans Sinhala, Nirmala UI and Iskoola Pota when available. Type වස්තුවක් and compare font rendering/Unicode output. The bundled font supplies a fallback without installation. Simulated input tests pass; real Helakuru still requires a Windows retest.
+On Windows, open a document and choose **Windows Sinhala editor · type with Helakuru** above the main text editor. Type using your installed Helakuru keyboard in this native Windows control, then choose **Apply** to transfer the page back. Apply is undoable from the main editor. **Cancel** leaves the page unchanged and asks before discarding typing. Save the project afterwards. This bypass is awaiting actual Helakuru verification; the ordinary Qt editor's direct-input problem is not claimed fixed. The previous **Sinhala typing** diagnostic button is now called **Keyboard check**.
+
+To remember a complex spelling, select the correctly spelled word in the page editor, open **Saved words**, and choose **Save reviewed spelling**. In a later document, select an incorrect word, open **Saved words**, pick a saved suggestion and choose **Insert selected word**. It replaces only the selection and supports Undo. You can also search, add pasted words and delete saved words. Entries stay on your computer, outside project files; nothing is automatically corrected or uploaded. This feature does not train the recognition model.
+
+If the native editor still has an input problem, compare the same word in Notepad and paste it into the page to preserve exact text. Record the Helakuru version/input mode and which editor failed for troubleshooting.
 
 ## Equations
 

@@ -1,3 +1,12 @@
+# Current input status — 0.2.2 — 2026-10-25
+
+- Notepad typing followed by paste works correctly (owner confirmed). Direct Helakuru input into the Qt editor still has an unresolved compatibility defect.
+- **Windows Sinhala editor** bypasses Qt input with a native Windows RichEdit control inside the app. It must be tested with the installed Helakuru keyboard before claiming resolution. Its native editing surface uses Windows rendering rather than the app's dark theme. The ordinary Qt editor is retained; use the new button for direct Sinhala typing.
+- Personal words are manually reviewed suggestions, not automatic OCR training. They cannot recover wrong keystrokes or guarantee recognition accuracy. Words remain in the local application-data folder until explicitly deleted; uninstalling an experimental ZIP does not remove that folder.
+- Real native-control tests are Windows-only. Linux tests exercise the integration and data protections, not Windows input messages. The Windows CI step and manual compatibility checklist remain release gates.
+
+Earlier milestone limitations follow; the status above supersedes their input-workaround descriptions.
+
 # Equation crop recognition follow-up — 2026-10-25
 
 Version 0.2.1 adds **Recognize this equation · AI** inside the equation editor. It uploads only the stored crop after consent, uses the existing OS-vault API key and daily limit, requires exactly one returned equation, and asks before replacing the source. Replacement is undoable and stays draft until accepted. Closing the editor or changing source while recognition runs prevents replacement. No offline equation recognition model is bundled; region marking alone does not recognize mathematics.

@@ -63,6 +63,12 @@ jobs:
         run: |
           python -m pytest -v --junitxml=test-results/windows.xml *>&1 | Tee-Object logs/pytest.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Native Windows Sinhala input control tests
+        id: native_input
+        run: |
+          $env:QT_QPA_PLATFORM = 'windows'
+          python -m pytest tests/test_windows_input.py -v --junitxml=test-results/native-input.xml *>&1 | Tee-Object logs/native-input.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Package complete offline application
         id: package
         run: |
@@ -74,6 +80,7 @@ jobs:
       - name: Verify packaged launch and bundled OCR/export
         id: packaged_smoke
         run: |
+          $env:QT_QPA_PLATFORM = 'windows'
           # Remove external OCR paths so this check exercises the bundled runtime.
           $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notlike '*Tesseract*' }) -join ';'
           Remove-Item Env:TESSDATA_PREFIX -ErrorAction SilentlyContinue

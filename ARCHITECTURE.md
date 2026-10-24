@@ -1,3 +1,9 @@
+## Windows input and personal vocabulary (0.2.2)
+
+`windows_input.py` hosts a real Windows RICHEDIT50W child HWND from the system Msftedit library inside a Qt dialog. Windows handles keystrokes, composition, selection and undo directly; no Qt key remapping or speculative deduplication is used. The main editor remains Qt. The Windows Sinhala editor explicitly transfers a full-page edit on Apply as one undoable Qt change; Cancel retains the page, and discarding typed changes requires confirmation. Only CR/CRLF paragraph separators are adapted to Qt LF; Sinhala sequences, ZWJ and repeated characters are retained. The native surface uses Nirmala UI and native Windows rendering. Handles/fonts are released when the dialog finishes. Real Helakuru verification is pending.
+
+`word_memory.py` stores only explicitly saved words/short phrases in versioned UTF-8 JSON under Qt's local AppDataLocation. Writes are validated and atomically replaced; malformed existing data is not silently reset. Suggestions use substring/string similarity, not a linguistic model. Insertion is manual and undoable. This is a personal vocabulary, not OCR training or automatic spell correction. No vocabulary is uploaded automatically. Users can remove entries in the dialog.
+
 # Architecture
 
 Sinhala OCR Studio 0.2.0 is an offline-first Python/PySide6 application with an explicitly opt-in provider adapter.

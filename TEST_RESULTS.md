@@ -1,3 +1,15 @@
+# Version 0.2.2 validation — 2026-10-25
+
+Executed: `QT_QPA_PLATFORM=offscreen TESSDATA_PREFIX=/workspace/ocr-tessdata /workspace/ocr-venv/bin/pytest -q --tb=short`: **81 passed, 3 skipped** on Linux. Ruff, pip check, git diff --check and the application `--smoke-test` passed.
+
+New executed checks cover native-dialog Apply/Cancel integration using a stand-in dialog, whole-page undo/redo and project round-trip preservation, insertion of only a selected saved word with undo, exact vocabulary persistence (including Sinhala ZWJ/repetitions), similarity suggestions without rewriting, invalid-file protection, and disk-write failure protection.
+
+The 3 skipped tests require actual Windows HWNDs and the Windows Qt platform: RichEdit Unicode/multiline/non-BMP round trip and Apply, native replace/Undo/Redo, and Cancel/Discard protection. A dedicated Windows Actions step runs them with `QT_QPA_PLATFORM=windows` and writes separate XML/log artifacts. Packaged Windows smoke also creates the native control. These checks do not emulate Helakuru.
+
+No Windows or genuine Helakuru execution is claimed from this Linux run. The user-confirmed Notepad/paste comparison establishes a working fallback, not that the new native editor works with Helakuru. No new OCR accuracy result is claimed.
+
+Earlier records follow.
+
 # Equation crop recognition follow-up — 2026-10-25
 
 Version 0.2.1 adds **Recognize this equation · AI** inside the equation editor. It uploads only the stored crop after consent, uses the existing OS-vault API key and daily limit, requires exactly one returned equation, and asks before replacing the source. Replacement is undoable and stays draft until accepted. Closing the editor or changing source while recognition runs prevents replacement. No offline equation recognition model is bundled; region marking alone does not recognize mathematics.

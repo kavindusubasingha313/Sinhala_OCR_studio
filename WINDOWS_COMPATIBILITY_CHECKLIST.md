@@ -1,3 +1,12 @@
+# 0.2.2 critical Sinhala input checks
+
+- [ ] In **Windows Sinhala editor**, type වස්තුවක්, ශ්‍රී, mixed Sinhala/English, legitimate repeated letters, vowel signs, conjuncts and punctuation using actual Helakuru. Compare Unicode with Notepad; record Windows/Helakuru versions and phonetic/Wijesekara mode.
+- [ ] Exercise Backspace/Delete, selection replacement, copy/paste, native Undo/Redo, mouse focus changes, multiline typing and 100%/150%/200% DPI.
+- [ ] Apply, undo/redo the transfer, switch pages, save/reopen and export TXT/DOCX; verify all characters persist.
+- [ ] Cancel and window-close do not discard changed typing without confirmation.
+- [ ] Save a reviewed word, restart, find it from a similar spelling, insert it and undo; delete it and confirm it stays removed after restart.
+- [ ] Native control and packaged smoke jobs pass; real Helakuru remains a separate manual gate.
+
 # Windows manual gate — all unchecked
 
 - [ ] Windows 10 and 11 clean install/start; missing Tesseract/data errors; offline run.

@@ -235,3 +235,69 @@ def test_pasted_sinhala_is_preserved_exactly():
     editor.undo()
     assert editor.toPlainText() == ''
     editor.close()
+
+
+def test_native_input_apply_is_undoable_and_cancel_preserves_page(tmp_path, monkeypatch):
+    from sinhala_ocr import windows_input
+    from PySide6.QtWidgets import QDialog
+    application, window, errors = make_window(tmp_path, monkeypatch)
+    path = tmp_path / 'input.png'
+    Image.new('RGB', (10, 10)).save(path)
+    window.display_document(import_document(path))
+    drain(application)
+    window.editor.insertPlainText('original වවවව')
+    window.accept()
+    class FakeDialog:
+        result_text = 'වස්තුවක් ශ්‍රී'
+        outcome = QDialog.DialogCode.Rejected
+        def __init__(self, text, parent):
+            assert text == 'original වවවව'
+        def exec(self):
+            return self.outcome
+    monkeypatch.setattr(windows_input, 'WindowsInputDialog', FakeDialog)
+    window.windows_sinhala_editor()
+    assert window.document.text == 'original වවවව'
+    assert window.document.approved
+    FakeDialog.outcome = QDialog.DialogCode.Accepted
+    window.windows_sinhala_editor()
+    assert window.document.text == 'වස්තුවක් ශ්‍රී'
+    assert not window.document.approved
+    window.editor.undo()
+    assert window.document.text == 'original වවවව'
+    window.editor.redo()
+    assert window.document.text == 'වස්තුවක් ශ්‍රී'
+    save_project(window.document, tmp_path / 'typed.sos.json')
+    assert load_project(tmp_path / 'typed.sos.json').text == 'වස්තුවක් ශ්‍රී'
+    assert not errors
+    window.document = None
+    window.close()
+
+
+def test_saved_word_replaces_only_selection_with_undo(tmp_path, monkeypatch):
+    from sinhala_ocr import word_memory
+    from PySide6.QtWidgets import QDialog
+    application, window, errors = make_window(tmp_path, monkeypatch)
+    path = tmp_path / 'input.png'
+    Image.new('RGB', (10, 10)).save(path)
+    window.display_document(import_document(path))
+    drain(application)
+    window.editor.insertPlainText('bad English')
+    cursor = window.editor.textCursor()
+    cursor.setPosition(0)
+    cursor.setPosition(3, cursor.MoveMode.KeepAnchor)
+    window.editor.setTextCursor(cursor)
+    monkeypatch.setattr(word_memory, 'WordMemory', lambda: None)
+    class FakeDialog:
+        chosen = 'වස්තුවක්'
+        def __init__(self, memory, selection, parent):
+            assert selection == 'bad'
+        def exec(self):
+            return QDialog.DialogCode.Accepted
+    monkeypatch.setattr(word_memory, 'WordMemoryDialog', FakeDialog)
+    window.saved_words()
+    assert window.document.text == 'වස්තුවක් English'
+    window.editor.undo()
+    assert window.document.text == 'bad English'
+    assert not errors
+    window.document = None
+    window.close()
