@@ -185,3 +185,53 @@ def test_preview_is_actually_painted_in_both_themes(tmp_path, monkeypatch):
     assert not errors
     window.document = None
     window.close()
+
+
+def test_equation_crop_recognition_requires_review_and_is_undoable(tmp_path, monkeypatch):
+    from sinhala_ocr import advanced_ocr
+    from sinhala_ocr.equations import Equation, equation_crop
+    from sinhala_ocr.equation_ui import EquationEditor
+    import base64
+    application, window, errors = make_window(tmp_path, monkeypatch)
+    path = tmp_path / 'formula.png'
+    Image.new('RGB', (100, 100), 'white').save(path)
+    window.display_document(import_document(path))
+    drain(application)
+    equation = equation_crop(path, (10, 10, 50, 50))
+    equation.edit('x')
+    dialog = EquationEditor(equation, window)
+    dialog.show()
+    monkeypatch.setattr(advanced_ocr.CredentialStore, 'get', lambda _: 'test-key')
+    calls = []
+    def recognize(data, **kwargs):
+        calls.append((data, kwargs))
+        return advanced_ocr.AiResult('', [Equation(latex=r'm=\sqrt{100^2+200^2+2\times100\times200\times\frac{1}{2}}')])
+    monkeypatch.setattr(advanced_ocr, 'recognize_with_ai', recognize)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args: QMessageBox.StandardButton.No)
+    window.advanced_ocr(equation_editor=dialog)
+    assert not calls
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args: QMessageBox.StandardButton.Yes)
+    window.advanced_ocr(equation_editor=dialog)
+    drain(application)
+    assert calls[0][0] == base64.b64decode(equation.image_png)
+    assert calls[0][1]['latex_enabled'] is True
+    assert equation.latex.startswith(r'm=\sqrt')
+    assert equation.status == 'draft'
+    dialog.source.undo()
+    assert equation.latex == 'x'
+    assert not errors
+    dialog.close()
+    window.document = None
+    window.close()
+
+
+def test_pasted_sinhala_is_preserved_exactly():
+    application = QApplication.instance() or QApplication([])
+    editor = UnicodeEditor()
+    text = 'වස්තුවක් සිංහල වවවව'
+    application.clipboard().setText(text)
+    editor.paste()
+    assert editor.toPlainText() == text
+    editor.undo()
+    assert editor.toPlainText() == ''
+    editor.close()

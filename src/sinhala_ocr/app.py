@@ -645,7 +645,7 @@ class MainWindow(QMainWindow):
     def ai_settings(self):
         return AiSettingsDialog(self.settings, self).exec()
 
-    def advanced_ocr(self):
+    def advanced_ocr(self, equation_editor=None):
         if not self.document or self.busy:
             return
         from .advanced_ocr import CredentialStore, DEFAULT_MODEL, recognize_with_ai
@@ -669,8 +669,9 @@ class MainWindow(QMainWindow):
             return
         session, index = self.session, self.document.active_page
         model = self.settings.value("ai/model", DEFAULT_MODEL)
-        answer = QMessageBox.question(self, "Send this page to OpenAI?",
-                                      f"Upload page {index + 1} of {Path(self.document.source).name} to OpenAI for AI transcription?\n\nModel: {model}\nRequests today: {used}/{limit}\nMaximum output: 4,096 tokens. API charges may apply. Set a spending limit in your provider account.\n\nOnly this page image is sent. The suggestion will be shown for review; your current text will not change automatically.",
+        target = "the selected equation crop" if equation_editor else f"page {index + 1} of {Path(self.document.source).name}"
+        answer = QMessageBox.question(self, "Send image to OpenAI?",
+                                      f"Upload {target} to OpenAI for AI transcription?\n\nModel: {model}\nRequests today: {used}/{limit}\nMaximum output: 4,096 tokens. API charges may apply. Set a spending limit in your provider account.\n\nOnly the selected image is sent. The suggestion will be shown for review; your current text will not change automatically.",
                                       QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
         if answer != QMessageBox.StandardButton.Yes:
             return
@@ -679,12 +680,36 @@ class MainWindow(QMainWindow):
         self.settings.setValue("ai/requests", used + 1)
         self.settings.sync()
         source, source_index, latex = self.document.source, self.document.pages[index].source_index, self.document.latex_enabled
+        crop = equation_editor.equation.image_png if equation_editor else None
+        initial_source = equation_editor.source.toPlainText() if equation_editor else None
         def operation():
-            data = render_page(source, source_index, 2000)
-            return recognize_with_ai(data, consent=True, api_key=key, latex_enabled=latex, model=model)
+            if crop:
+                import base64
+                data = base64.b64decode(crop)
+            else:
+                data = render_page(source, source_index, 2000)
+            return recognize_with_ai(data, consent=True, api_key=key, latex_enabled=True if crop else latex, model=model)
         def complete(result):
             self.statusBar().showMessage(f"AI suggestion received · {result.input_tokens} input / {result.output_tokens} output tokens")
-            self.review_candidate(session, index, result.text, result.equations, ai=True)
+            if equation_editor:
+                if not equation_editor.isVisible():
+                    return
+                if len(result.equations) != 1:
+                    self.error("The crop did not produce exactly one equation. Select a tighter region and try again; existing source was preserved.")
+                    return
+                if equation_editor.source.toPlainText() != initial_source:
+                    self.error("Equation source changed during recognition; it was preserved. Try again when editing is complete.")
+                    return
+                if QMessageBox.question(equation_editor, "Review recognized equation",
+                                        "Replace the source with this AI suggestion? Compare it with the crop before accepting.\n\n" + result.equations[0].latex,
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                        QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                    return
+                equation_editor.source.selectAll()
+                equation_editor.source.insertPlainText(result.equations[0].latex)
+                equation_editor.update_preview()
+            else:
+                self.review_candidate(session, index, result.text, result.equations, ai=True)
         self.background(operation, complete)
 
     def export(self):

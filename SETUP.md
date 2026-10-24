@@ -1,6 +1,6 @@
 # Setup and use
 
-For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.0** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
+For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.1** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
 
 ## Workspace
 
@@ -16,7 +16,7 @@ Click inside the **Text editor** and select the installed Helakuru Sinhala input
 
 ## Equations
 
-Enable **LaTeX ON** for mathematical extraction with Advanced OCR. Standard offline Tesseract remains a text baseline. In the **Equations** tab, add source manually, select a region from the rendered original page, or convert selected LaTeX text into an equation. Double-click an equation to edit its source, preview and Accept it. The text editor shows a readable reference such as ⟦Equation 1⟧; moving it changes equation placement.
+Enable **LaTeX ON** for mathematical extraction with Advanced OCR. Standard offline Tesseract remains a text baseline. In the **Equations** tab, add source manually, select a region from the rendered original page, or convert selected LaTeX text into an equation. Double-click an equation to edit its source, preview and Accept it. For a marked crop, click **Recognize this equation · AI** in that editor to obtain a LaTeX suggestion using your configured API key; approve the crop upload, review the proposed source, then Accept after checking the preview. Marking alone does not recognize the equation. The text editor shows a readable reference such as ⟦Equation 1⟧; moving it changes equation placement.
 
 Export **Word with editable equations** after accepting the sources. Supported formulas become genuine Word equation objects; they are not preview images. An unsupported source stops export and only uses an image if you explicitly choose that fallback. Markdown/LaTeX source exports retain the source. See LATEX_EQUATIONS.md for dialect limits. Actual Word 2019 visual/editing checks remain manual.
 

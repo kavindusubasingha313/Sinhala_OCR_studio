@@ -169,7 +169,7 @@ class KeyboardDialog(QDialog):
         self.setWindowTitle("Sinhala typing · font and keyboard check")
         self.resize(700, 450)
         layout = QVBoxLayout(self)
-        help_text = QLabel("Select your installed Helakuru Sinhala input mode in Windows, click the typing area, and type වස්තුවක්. This panel preserves exactly what the input method commits. Try another font if the same text has misplaced vowel signs. Repeated letters in the Unicode output indicate an input sequence problem, not just a font.")
+        help_text = QLabel("Select your installed Helakuru Sinhala input mode in Windows, click the typing area, and type වස්තුවක්. This panel preserves exactly what the input method commits. Try another font if the same text has misplaced vowel signs. Repeated letters in the Unicode output indicate an input sequence problem, not just a font. If direct typing repeats letters, compare typing in Windows Notepad and paste that text here with Ctrl+V. Correct pasted text isolates the problem to direct input; preserve your text rather than deleting repeated letters automatically.")
         help_text.setWordWrap(True)
         layout.addWidget(help_text)
         combo = QComboBox()

@@ -1,3 +1,11 @@
+# Equation crop recognition follow-up — 2026-10-25
+
+Version 0.2.1 adds **Recognize this equation · AI** inside the equation editor. It uploads only the stored crop after consent, uses the existing OS-vault API key and daily limit, requires exactly one returned equation, and asks before replacing the source. Replacement is undoable and stays draft until accepted. Closing the editor or changing source while recognition runs prevents replacement. No offline equation recognition model is bundled; region marking alone does not recognize mathematics.
+
+The owner confirmed that 0.2.0 still repeats Sinhala characters. Their typing-panel screenshot shows repeated U+0DC0 code points. Font changes cannot repair that sequence. Actual Helakuru integration remains unresolved: compare typing in Notepad and pasting into the native editor before changing input handling. No speculative deduplication is applied. Incorrect OCR text is a separate recognition-quality issue.
+
+Validation for this follow-up is recorded below; live provider accuracy and genuine Windows input still require manual testing.
+
 # Known issues and verification limits
 
 - **Helakuru:** the owner reported wrong Sinhala characters/vowel signs and supplied “වවවවවවවව වස්තුවක්”. The editor now uses native QPlainTextEdit, explicit Sinhala fonts and normal IME hints. Simulated composition preserves වස්තුවක් exactly without duplication. The real Windows Helakuru input sequence is not reproduced in Linux; compatibility is not yet certified. Use More → Keyboard & Sinhala font to compare fonts and inspect committed Unicode. No automatic deduplication or Unicode rewriting is applied.

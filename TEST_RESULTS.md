@@ -1,3 +1,11 @@
+# Equation crop recognition follow-up — 2026-10-25
+
+Version 0.2.1 adds **Recognize this equation · AI** inside the equation editor. It uploads only the stored crop after consent, uses the existing OS-vault API key and daily limit, requires exactly one returned equation, and asks before replacing the source. Replacement is undoable and stays draft until accepted. Closing the editor or changing source while recognition runs prevents replacement. No offline equation recognition model is bundled; region marking alone does not recognize mathematics.
+
+The owner confirmed that 0.2.0 still repeats Sinhala characters. Their typing-panel screenshot shows repeated U+0DC0 code points. Font changes cannot repair that sequence. Actual Helakuru integration remains unresolved: compare typing in Notepad and pasting into the native editor before changing input handling. No speculative deduplication is applied. Incorrect OCR text is a separate recognition-quality issue.
+
+Follow-up validation: 73 tests passed on Linux, Ruff passed and pip check found no broken dependencies. Crop recognition was tested with mocked transport, including consent, crop-only payload, source review and undo. Clipboard Sinhala preservation passed. No live API or Windows Helakuru test was performed.
+
 # Version 0.2.0 workspace validation — 2026-10-24
 
 Executed on Debian Linux / Python 3.12 / PySide6 6.8.3:
