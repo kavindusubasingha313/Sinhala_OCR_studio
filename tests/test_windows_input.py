@@ -53,3 +53,42 @@ def test_cancel_retains_text_until_explicit_discard(native, monkeypatch):
     dialog.reject()
     assert not dialog.control.hwnd
     assert dialog.result_text == dialog.initial_text
+
+
+def test_native_selection_uses_utf16_and_keeps_sinhala(native):
+    _, dialog = native
+    dialog.control.set_text('😀 ශ්‍රී වස්තුවක්')
+    # Emoji is two UTF-16 units; Sinhala includes the zero-width joiner.
+    dialog.control.message(0x00B1, 3, 3 + len('ශ්‍රී'.encode('utf-16-le')) // 2)
+    assert dialog.control.selected_text() == 'ශ්‍රී'
+    dialog.control.replace_selection('සිංහල')
+    assert dialog.control.text() == '😀 සිංහල වස්තුවක්'
+    dialog.edit_command(0x00C7)
+    assert dialog.control.text() == '😀 ශ්‍රී වස්තුවක්'
+
+
+def test_native_saved_word_replaces_only_selection(native, monkeypatch):
+    from sinhala_ocr import word_memory
+    from PySide6.QtWidgets import QDialog
+    _, dialog = native
+    dialog.control.set_text('bad English')
+    dialog.control.message(0x00B1, 0, 3)
+    monkeypatch.setattr(word_memory, 'WordMemory', lambda: None)
+    class WordDialog:
+        chosen = 'වස්තුවක්'
+        def __init__(self, memory, selection, parent):
+            assert selection == 'bad'
+        def exec(self):
+            return QDialog.DialogCode.Accepted
+    monkeypatch.setattr(word_memory, 'WordMemoryDialog', WordDialog)
+    dialog.saved_words()
+    assert dialog.control.text() == 'වස්තුවක් English'
+    dialog.edit_command(0x00C7)
+    assert dialog.control.text() == 'bad English'
+
+
+def test_closed_control_cannot_return_empty_text(native):
+    _, dialog = native
+    dialog.control.dispose()
+    with pytest.raises(RuntimeError):
+        dialog.control.text()

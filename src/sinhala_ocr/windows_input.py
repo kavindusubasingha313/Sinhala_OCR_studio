@@ -7,7 +7,7 @@ import ctypes
 import sys
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QMessageBox, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 
 MAX_TEXT = 2_000_000
 
@@ -78,6 +78,8 @@ class WindowsTextControl(QWidget):
             raise RuntimeError("Windows text integrity check failed; your page was not changed.")
 
     def text(self):
+        if not self.hwnd or not self.user.IsWindow(self.hwnd):
+            raise RuntimeError("The Windows editor is unavailable; your page was not changed.")
         length = self.user.GetWindowTextLengthW(self.hwnd)
         buffer = ctypes.create_unicode_buffer(length + 1)
         copied = self.user.GetWindowTextW(self.hwnd, buffer, length + 1)
@@ -87,7 +89,25 @@ class WindowsTextControl(QWidget):
         # are adapted; all Sinhala characters, ZWJ and repetitions are preserved.
         return buffer.value.replace('\r\n', '\n').replace('\r', '\n')
 
+    def selected_text(self):
+        from ctypes import wintypes as w
+        class CharacterRange(ctypes.Structure):
+            _fields_ = [("start", w.LONG), ("end", w.LONG)]
+        selection = CharacterRange()
+        self.message(0x0434, 0, ctypes.addressof(selection))  # EM_EXGETSEL
+        length = selection.end - selection.start
+        if not 0 <= length <= MAX_TEXT:
+            raise RuntimeError("Windows returned an invalid text selection.")
+        buffer = ctypes.create_unicode_buffer(length + 1)
+        self.message(0x043E, 0, ctypes.addressof(buffer))  # EM_GETSELTEXT
+        return buffer.value.replace('\r\n', '\n').replace('\r', '\n')
+
     def replace_selection(self, text):
+        if '\x00' in text:
+            raise ValueError("Text cannot contain a null character.")
+        proposed = len(self.text().encode('utf-16-le')) - len(self.selected_text().encode('utf-16-le')) + len(text.encode('utf-16-le'))
+        if proposed // 2 > MAX_TEXT:
+            raise ValueError("The inserted text exceeds the Windows editor limit.")
         buffer = ctypes.create_unicode_buffer(text)
         self.message(0x00C2, 1, ctypes.addressof(buffer))  # EM_REPLACESEL, undoable
 
@@ -131,6 +151,16 @@ class WindowsInputDialog(QDialog):
         layout.addWidget(label)
         self.control = WindowsTextControl(text, self)
         layout.addWidget(self.control, 1)
+        editing = QHBoxLayout()
+        for label, callback in [("Undo", lambda: self.edit_command(0x00C7)),
+                                ("Redo", lambda: self.edit_command(0x0454)),
+                                ("Saved words", self.saved_words)]:
+            button = QPushButton(label)
+            button.setAutoDefault(False)
+            button.clicked.connect(callback)
+            editing.addWidget(button)
+        editing.addStretch()
+        layout.addLayout(editing)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Apply | QDialogButtonBox.StandardButton.Cancel)
         buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -138,6 +168,20 @@ class WindowsInputDialog(QDialog):
         # A neutral native editing surface avoids breaking native composition
         # with Qt styling. RichEdit uses Windows text/selection rendering.
         QTimer.singleShot(0, self.control.focus_native)
+
+    def edit_command(self, command):
+        self.control.message(command)
+        self.control.focus_native()
+
+    def saved_words(self):
+        from .word_memory import WordMemory, WordMemoryDialog
+        try:
+            dialog = WordMemoryDialog(WordMemory(), self.control.selected_text(), self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.control.replace_selection(dialog.chosen)
+        except (ValueError, RuntimeError, OSError) as error:
+            QMessageBox.warning(self, "Personal words unavailable", str(error))
+        self.control.focus_native()
 
     def accept(self):
         try:
@@ -149,7 +193,12 @@ class WindowsInputDialog(QDialog):
         super().accept()
 
     def reject(self):
-        if self.control.hwnd and self.control.text() != self.initial_text:
+        try:
+            changed = self.control.hwnd and self.control.text() != self.initial_text
+        except RuntimeError as error:
+            QMessageBox.warning(self, "Text could not be read", str(error))
+            return
+        if changed:
             if QMessageBox.question(self, "Discard typing?", "Discard the changes in this typing window? Your saved page will remain unchanged.",
                                     QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
                                     QMessageBox.StandardButton.Cancel) != QMessageBox.StandardButton.Discard:

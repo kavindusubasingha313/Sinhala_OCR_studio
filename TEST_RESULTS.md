@@ -1,3 +1,7 @@
+# Version 0.2.3 follow-up validation — 2026-10-25
+
+Executed on Linux: pytest **81 passed, 6 skipped**; Ruff, pip check and source smoke passed. Native Windows tests now also exercise UTF-16 selection following an emoji, a Sinhala ZWJ-containing word, saved-word replacement with undo, and rejection of reads from closed controls. These were collected but skipped on Linux; they must run in the dedicated native Windows CI step. The Actions API returned Forbidden, so this session cannot establish the new Windows CI outcome. No actual Helakuru test is claimed.
+
 # Version 0.2.2 validation — 2026-10-25
 
 Executed: `QT_QPA_PLATFORM=offscreen TESSDATA_PREFIX=/workspace/ocr-tessdata /workspace/ocr-venv/bin/pytest -q --tb=short`: **81 passed, 3 skipped** on Linux. Ruff, pip check, git diff --check and the application `--smoke-test` passed.

@@ -1,3 +1,9 @@
+# Version 0.2.3 follow-up — 2026-10-25
+
+Saved words, Undo and Redo are now accessible inside the native Windows Sinhala editor. Native selections use UTF-16 positions so Sinhala joiners and characters following supplementary Unicode characters remain intact. A closed/unavailable native control now raises an error rather than returning empty text that could replace the page; failed reads keep the typing window open.
+
+The owner has not yet tested 0.2.2. Real Helakuru remains unverified. GitHub Actions status lookup returned Forbidden in this session; no successful Windows run is claimed. Linux validation passed with 81 tests and 6 Windows-only tests skipped; the dedicated Windows CI step runs those native-control tests. Use the latest successful 0.2.3 build for the manual input gate.
+
 # Version 0.2.2 — Windows input bypass and personal words — 2026-10-25
 
 The owner verified that Helakuru typing in Notepad and pasting into the application is correct. The Qt direct-input defect therefore remains a compatibility issue, not something a font/dictionary can repair. Added an integrated **Windows Sinhala editor** using the OS RichEdit control, bypassing Qt text input. Apply/Cancel, native editing undo and undoable transfer preserve the existing page. This is an implemented compatibility path, not yet a verified Helakuru fix.

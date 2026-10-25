@@ -1,3 +1,5 @@
+The 0.2.3 native input dialog includes saved-word selection/insertion and explicit Undo/Redo. Selection extraction uses RichEdit UTF-16 character ranges rather than slicing Python text at Win32 positions. Closed control reads fail instead of returning empty text.
+
 ## Windows input and personal vocabulary (0.2.2)
 
 `windows_input.py` hosts a real Windows RICHEDIT50W child HWND from the system Msftedit library inside a Qt dialog. Windows handles keystrokes, composition, selection and undo directly; no Qt key remapping or speculative deduplication is used. The main editor remains Qt. The Windows Sinhala editor explicitly transfers a full-page edit on Apply as one undoable Qt change; Cancel retains the page, and discarding typed changes requires confirmation. Only CR/CRLF paragraph separators are adapted to Qt LF; Sinhala sequences, ZWJ and repeated characters are retained. The native surface uses Nirmala UI and native Windows rendering. Handles/fonts are released when the dialog finishes. Real Helakuru verification is pending.
