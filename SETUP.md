@@ -1,3 +1,5 @@
+For the current input failure investigation, use the separate **Windows input investigation (diagnostic only)** Actions workflow. Its Summary contains comparisons; its optional standalone EXE and instructions are described in [diagnostics/READ_ME_FIRST.md](diagnostics/READ_ME_FIRST.md). This is not a new OCR release.
+
 # Setup and use
 
 For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.6** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.

@@ -1,3 +1,9 @@
+# Isolated input diagnostic validation — 2026-10-25
+
+Local Linux suite: **91 passed, 12 Windows-only skipped**. Ruff, pip check and git diff --check passed. New tests validate comparison reporting with preserved mismatch text, continuation after worker exit/timeout, and refusal of automated clipboard writes outside GitHub Actions. These are harness checks, not execution of the native controls.
+
+The diagnostic workflow independently builds a manual Input Lab, runs isolated source workers and packaged workers, and uploads observation JSON/logs plus a readable Summary. It records mismatches rather than calling them a production pass. Execution errors make the diagnostic job fail; actual undo mismatches remain explicit observations. The unchanged application workflow still blocks release on its native failures. No Windows diagnostic outcome or Helakuru compatibility is claimed before the runner/manual results arrive.
+
 # Version 0.2.6 — native text-mode investigation — 2026-10-25
 
 The owner's latest Windows screenshot reports **4 failed, 8 passed**: explicit deletion plus insertion still did not fix cross-script Undo. Removing emoji coverage alone cannot fix the independently failing `bad English` restoration.

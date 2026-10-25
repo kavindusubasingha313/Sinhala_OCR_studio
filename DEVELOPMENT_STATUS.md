@@ -1,3 +1,11 @@
+# Diagnostic isolation — 2026-10-25
+
+Production changes are paused. The latest owner-provided Windows result remains **4 failed, 8 passed**; the native text-mode change did not resolve the failure. No new product release or fix is claimed.
+
+A separate **Windows input investigation (diagnostic only)** workflow builds a standalone Input Lab and compares fresh raw Windows plain/rich controls (no Qt imports), a standard Qt editor and the current app integration. Separate worker processes record initialization, replacement, Undo/Redo, additional Undo, mode and errors using fixed samples. Paste uses only the disposable CI clipboard; character-message injection is explicitly not Helakuru. The matrix compares Latin, Sinhala and mathematical symbols, not emojis. Results and mismatch traces are published in its Summary and observation artifacts; a diagnostic EXE is uploaded for optional manual Helakuru comparisons without Python installation.
+
+See `diagnostics/READ_ME_FIRST.md` for owner instructions and interpretation. The production workflow and its failure gates are unchanged. Next decision requires the diagnostic Windows results, not another speculative editor patch.
+
 # Version 0.2.6 — native text-mode investigation — 2026-10-25
 
 The owner's latest Windows screenshot reports **4 failed, 8 passed**: explicit deletion plus insertion still did not fix cross-script Undo. Removing emoji coverage alone cannot fix the independently failing `bad English` restoration.

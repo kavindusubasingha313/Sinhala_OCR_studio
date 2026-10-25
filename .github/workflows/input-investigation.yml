@@ -1,0 +1,75 @@
+name: Windows input investigation (diagnostic only)
+on:
+  push:
+    paths:
+      - 'diagnostics/**'
+      - 'src/sinhala_ocr/windows_input.py'
+      - '.github/workflows/input-investigation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  investigate:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      QT_QPA_PLATFORM: windows
+      PYTHONUTF8: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install diagnostic dependencies
+        run: |
+          python -m pip install -r requirements-lock.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install --no-deps -e .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install pyinstaller==6.12.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build standalone manual input lab
+        id: package
+        run: |
+          python -m PyInstaller --noconfirm --onedir --windowed --name SinhalaInputLab --paths src diagnostics/input_lab.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item diagnostics/READ_ME_FIRST.md dist/SinhalaInputLab/READ_ME_FIRST.md
+          Compress-Archive -Path dist/SinhalaInputLab -DestinationPath "SinhalaInputLab-DIAGNOSTIC-$env:GITHUB_SHA.zip"
+      - name: Compare isolated source controls
+        id: probe
+        run: |
+          python diagnostics/input_lab.py --automatic --output input-lab-results
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check packaged diagnostic workers
+        if: always() && steps.package.outcome == 'success'
+        id: packaged_probe
+        run: |
+          $process = Start-Process dist/SinhalaInputLab/SinhalaInputLab.exe -ArgumentList '--automatic --output packaged-input-results' -PassThru
+          if (!$process.WaitForExit(420000)) { $process.Kill(); throw 'Packaged diagnostic timed out' }
+          if ($process.ExitCode -ne 0) { throw 'Packaged diagnostic failed to execute' }
+      - name: Upload diagnostic executable (not an OCR release)
+        if: always() && steps.package.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SinhalaInputLab-DIAGNOSTIC-${{ github.sha }}
+          path: SinhalaInputLab-DIAGNOSTIC-*.zip
+          if-no-files-found: error
+      - name: Upload observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SinhalaInputLab-observations-${{ github.sha }}
+          path: |
+            input-lab-results/
+            packaged-input-results/
+            build/SinhalaInputLab/warn-*.txt
+      - name: Show diagnostic observations
+        if: always()
+        run: |
+          '## Diagnostic execution only — no product release approval' >> $env:GITHUB_STEP_SUMMARY
+          'Green here means the investigation ran, not that Undo or Helakuru passed. Read the comparison below. The application workflow retains its failing release gates.' >> $env:GITHUB_STEP_SUMMARY
+          if (Test-Path input-lab-results/SUMMARY.md) { Get-Content input-lab-results/SUMMARY.md >> $env:GITHUB_STEP_SUMMARY }
+          if (Test-Path packaged-input-results/SUMMARY.md) { Get-Content packaged-input-results/SUMMARY.md >> $env:GITHUB_STEP_SUMMARY }
