@@ -1,3 +1,11 @@
+# Smoke Enter-event correction — 2026-10-25
+
+The owner supplied an actionable source-smoke failure at `native_typing_pad`: expected `වස්තුවක්\nසිංහල x²`, received `වස්තුවක්සිංහල x²`. Offline OCR and credential-backend stages passed. The missing newline was in a synthetic character-only input sequence, not evidence that genuine Helakuru typing or a packaged dependency failed.
+
+The fixture driver omitted Enter key-down/key-up and sent only WM_CHAR(13). RichEdit handles Enter on the key-down path. `synthetic_input.type_fixture` now sends WM_KEYDOWN(VK_RETURN), WM_CHAR(13), WM_KEYUP(VK_RETURN) with repeat count/scan code, preserving the expected newline assertion. Other fixture characters use UTF-16 units. This helper runs only in synthetic tests; it does not hook or transform user input. Real Windows execution must confirm the correction.
+
+New Windows regressions check multiline Sinhala and leading/trailing/blank lines through the native pad, transfer and Qt Undo/Redo. Local validation: **99 passed, 7 Windows-only tests skipped**; Ruff, pip check and Linux source smoke passed. The reported font-fallback warnings are separate from the newline assertion; real rendering and Helakuru still require manual verification. Product version stays 0.2.7; this commit corrects its test driver.
+
 # Packaged-smoke investigation — 2026-10-25
 
 The owner provided a run where application packaging succeeded but `Verify packaged launch and bundled OCR/export` returned exit 1. The screenshot does not identify the underlying exception; no cause or repair is claimed. Earlier native test gates were passed in that run, since packaging executed.

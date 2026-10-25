@@ -76,3 +76,32 @@ def test_cancel_protects_unsent_typing(application, monkeypatch):
     finally:
         dialog.control.dispose()
         dialog.done(0)
+
+
+@pytest.mark.parametrize('text', ['වස්තුවක්\nසිංහල x²', '\nවස්තුවක්\n\nසිංහල\n'])
+def test_enter_preserves_lines_through_native_pad_and_qt_undo(application, text):
+    from sinhala_ocr.synthetic_input import type_fixture
+    dialog = WindowsInputDialog('original English')
+    editor = UnicodeEditor()
+    editor.setPlainText('original English')
+    try:
+        dialog.show()
+        application.processEvents()
+        type_fixture(dialog.control.message, text)
+        assert dialog.control.text() == text
+        dialog.accept()
+        assert dialog.result_text == text
+        editor.selectAll()
+        cursor = editor.textCursor()
+        cursor.beginEditBlock()
+        cursor.insertText(dialog.result_text)
+        cursor.endEditBlock()
+        assert editor.toPlainText() == text
+        editor.undo()
+        assert editor.toPlainText() == 'original English'
+        editor.redo()
+        assert editor.toPlainText() == text
+    finally:
+        dialog.control.dispose()
+        dialog.done(0)
+        editor.close()

@@ -1,3 +1,5 @@
+`synthetic_input.py` generates explicit Enter key sequences for smoke fixtures. It is never attached to the user input pipeline; native Windows/Helakuru composition remains unfiltered. Multiline fixtures preserve exact newline assertions.
+
 Explicit synthetic smoke execution uses `smoke_report.py` for checkpoint/error JSON. It never opens user documents or reads provider keys. CI separately checks source and frozen execution, publishes errors and prevents artifact release without a passed report. Normal application diagnostics retain their existing privacy restrictions.
 
 # Current input architecture (0.2.7)

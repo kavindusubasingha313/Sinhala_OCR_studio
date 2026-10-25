@@ -892,8 +892,8 @@ def smoke_test(app, window):
                     native.show()
                     app.processEvents()
                     report.check(native.control.text() == "", "Typing pad was not initially empty")
-                    for character in "වස්තුවක්\nසිංහල x²":
-                        native.control.message(0x102, 13 if character == "\n" else ord(character))
+                    from .synthetic_input import type_fixture
+                    type_fixture(native.control.message, "වස්තුවක්\nසිංහල x²")
                     native.accept()
                     report.check(native.result_text == "වස්තුවක්\nසිංහල x²",
                                  "Synthetic multiline typing differs: expected " + repr("වස්තුවක්\nසිංහල x²") + "; actual " + repr(native.result_text))
