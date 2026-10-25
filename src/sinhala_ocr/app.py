@@ -868,36 +868,45 @@ def main():
 
 
 def smoke_test(app, window):
-    import json
+    from .smoke_report import SmokeReport
+    from contextlib import ExitStack
     import tempfile
     from PIL import Image
     from pypdf import PdfWriter
+    report = SmokeReport()
     try:
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, ExitStack() as cleanup:
+            cleanup.callback(QThreadPool.globalInstance().waitForDone)
             image = Path(folder) / "blank.png"
             Image.new("RGB", (500, 200), "white").save(image)
-            assert not TesseractEngine().recognize(image).text.strip()
+            report.phase("offline_ocr")
+            report.check(not TesseractEngine().recognize(image).text.strip(), "Blank-image OCR returned unexpected text")
             if sys.platform == "win32":
+                report.phase("windows_credential_backend")
                 from .advanced_ocr import CredentialStore
                 CredentialStore().backend()  # Check packaging only; do not read/store credentials.
                 if app.platformName() == "windows":
+                    report.phase("native_typing_pad")
                     from .windows_input import WindowsInputDialog
                     native = WindowsInputDialog("වස්තුවක්\nසිංහල x²", window)
                     native.show()
                     app.processEvents()
-                    assert native.control.text() == ""
+                    report.check(native.control.text() == "", "Typing pad was not initially empty")
                     for character in "වස්තුවක්\nසිංහල x²":
                         native.control.message(0x102, 13 if character == "\n" else ord(character))
                     native.accept()
-                    assert native.result_text == "වස්තුවක්\nසිංහල x²"
+                    report.check(native.result_text == "වස්තුවක්\nසිංහල x²",
+                                 "Synthetic multiline typing differs: expected " + repr("වස්තුවක්\nසිංහල x²") + "; actual " + repr(native.result_text))
+            report.phase("pdf_import_render")
             pdf = Path(folder) / "pages.pdf"
             writer = PdfWriter()
             writer.add_blank_page(300, 400)
             writer.add_blank_page(400, 300)
             writer.write(pdf)
             document = import_document(pdf)
-            assert len(document.pages) == 2
-            assert render_page(pdf, 1).startswith(b"\x89PNG")
+            report.check(len(document.pages) == 2, "Expected two imported PDF pages")
+            report.check(render_page(pdf, 1).startswith(b"\x89PNG"), "PDFium did not return a PNG")
+            report.phase("workspace_and_equation_preview")
             window.display_document(document)
             window.pages.setCurrentRow(1)
             window.editor.setPlainText("සිංහල වස්තුවක් English x² = ½")
@@ -906,20 +915,22 @@ def smoke_test(app, window):
             equation.accept()
             window.attach_equation(equation)
             preview = EquationEditor(equation, window)
-            assert preview.update_preview()
+            report.check(preview.update_preview(), "Equation preview failed: " + preview.message.text())
+            report.phase("docx_export")
             export_document(document, Path(folder) / "smoke.docx")
+            report.phase("tabs_and_themes")
             window.display_document(import_document(image))
             window.tabs.setCurrentIndex(0)
-            assert "වස්තුවක්" in window.editor.toPlainText()
+            report.check("වස්තුවක්" in window.editor.toPlainText(), "Page text was not preserved when switching tabs")
             for theme in ["Dark", "Light"]:
                 window.theme.setCurrentText(theme)
             # Drain page rendering before temporary source files disappear.
             QThreadPool.globalInstance().waitForDone()
             app.processEvents()
-        Path("packaged-smoke.json").write_text(json.dumps({"status": "passed"}), encoding="utf-8")
+        report.finish()
         app.exit(0)
     except Exception as error:
-        Path("packaged-smoke.json").write_text(json.dumps({"status": "failed", "error_type": type(error).__name__}), encoding="utf-8")
+        report.fail(error)
         app.exit(1)
 
 

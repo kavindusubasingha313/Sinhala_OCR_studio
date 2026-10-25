@@ -69,6 +69,25 @@ jobs:
           $env:QT_QPA_PLATFORM = 'windows'
           python -m pytest tests/test_windows_input.py -v --capture=tee-sys --junitxml=test-results/native-input.xml *>&1 | Tee-Object logs/native-input.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify source application smoke before packaging
+        id: source_smoke
+        run: |
+          $env:QT_QPA_PLATFORM = 'windows'
+          Remove-Item packaged-smoke.json -ErrorAction SilentlyContinue
+          $sourceProcess = Start-Process python -ArgumentList 'scripts/desktop-entry.py --smoke-test' -PassThru -RedirectStandardOutput logs/source-smoke.log -RedirectStandardError logs/source-stderr.log
+          $sourceTimedOut = !$sourceProcess.WaitForExit(60000)
+          if ($sourceTimedOut) { $sourceProcess.Kill(); $sourceProcess.WaitForExit() }
+          $smokeExit = $sourceProcess.ExitCode
+          if (Test-Path packaged-smoke.json) {
+            Move-Item packaged-smoke.json logs/source-smoke.json -Force
+            Get-Content logs/source-smoke.json
+          }
+          if ($sourceTimedOut -or $smokeExit -ne 0) {
+            Get-Content logs/source-stderr.log -Tail 80 -ErrorAction SilentlyContinue
+            throw "Source smoke failed: exit=$smokeExit, timeout=$sourceTimedOut. See source-smoke.json and the run Summary."
+          }
+          $sourceResult = Get-Content logs/source-smoke.json -Raw | ConvertFrom-Json
+          if ($sourceResult.status -ne 'passed') { throw 'Source smoke did not confirm success' }
       - name: Package complete offline application
         id: package
         run: |
@@ -84,10 +103,22 @@ jobs:
           # Remove external OCR paths so this check exercises the bundled runtime.
           $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notlike '*Tesseract*' }) -join ';'
           Remove-Item Env:TESSDATA_PREFIX -ErrorAction SilentlyContinue
+          Remove-Item packaged-smoke.json -ErrorAction SilentlyContinue
           $process = Start-Process dist/SinhalaOCRStudio/SinhalaOCRStudio.exe -ArgumentList '--smoke-test' -PassThru -RedirectStandardOutput logs/packaged-stdout.log -RedirectStandardError logs/packaged-stderr.log
-          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Packaged smoke timed out' }
-          if (Test-Path packaged-smoke.json) { Move-Item packaged-smoke.json logs/packaged-smoke.json }
-          if ($process.ExitCode -ne 0) { throw "Packaged smoke failed: $($process.ExitCode)" }
+          $timedOut = !$process.WaitForExit(60000)
+          if ($timedOut) { $process.Kill(); $process.WaitForExit() }
+          if (Test-Path packaged-smoke.json) {
+            Move-Item packaged-smoke.json logs/packaged-smoke.json -Force
+            Get-Content logs/packaged-smoke.json
+          } else {
+            'No smoke report was produced; inspect startup stderr below.'
+          }
+          if ($timedOut -or $process.ExitCode -ne 0) {
+            Get-Content logs/packaged-stderr.log -Tail 80 -ErrorAction SilentlyContinue
+            throw "Packaged smoke failed: exit=$($process.ExitCode), timeout=$timedOut. See the smoke details above and in Summary."
+          }
+          $smokeResult = Get-Content logs/packaged-smoke.json -Raw | ConvertFrom-Json
+          if ($smokeResult.status -ne 'passed') { throw 'Packaged smoke did not confirm success' }
           'Packaged launch, multipage PDF rendering, document tabs, Sinhala editor, native OMML export and Windows credential-backend loading smoke passed.' | Out-File logs/packaged-result.log
       - name: Create experimental ZIP
         id: archive

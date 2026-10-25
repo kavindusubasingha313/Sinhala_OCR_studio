@@ -20,3 +20,13 @@ if summary and report.exists():
             for failure in failures:
                 detail = (failure.text or failure.attrib.get('message', 'No detail'))[:6000]
                 output.write('\n```text\n' + detail.replace('```', "'''") + '\n```\n')
+
+# Smoke fixtures are synthetic; these reports never contain user documents or keys.
+if summary:
+    for name in ['source-smoke', 'packaged-smoke']:
+        smoke = Path('logs') / (name + '.json')
+        if smoke.exists():
+            with Path(summary).open('a', encoding='utf-8') as output:
+                output.write('\n## ' + name + ' details\n\n```json\n')
+                output.write(smoke.read_text(encoding='utf-8')[:16000].replace('```', "'''"))
+                output.write('\n```\n')

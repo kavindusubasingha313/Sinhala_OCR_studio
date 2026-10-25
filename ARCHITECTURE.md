@@ -1,3 +1,5 @@
+Explicit synthetic smoke execution uses `smoke_report.py` for checkpoint/error JSON. It never opens user documents or reads provider keys. CI separately checks source and frozen execution, publishes errors and prevents artifact release without a passed report. Normal application diagnostics retain their existing privacy restrictions.
+
 # Current input architecture (0.2.7)
 
 QTextDocument owns document text and all replacement/Undo/Redo operations. WindowsInputDialog is a blank native typing pad with read-only selection context. Its Insert action transfers new Unicode text through the captured QTextCursor in one edit block; it never seeds RichEdit with original document content. Empty results are ignored; page/session/text changes prevent stale insertion. Saved vocabulary remains in the main Qt editor. DiagnosticWindowsEditor retains the former full-document native implementation solely for reproduction. Diagnostic native replacement failures are not treated as product successes.

@@ -1,3 +1,13 @@
+# Packaged-smoke investigation — 2026-10-25
+
+The owner provided a run where application packaging succeeded but `Verify packaged launch and bundled OCR/export` returned exit 1. The screenshot does not identify the underlying exception; no cause or repair is claimed. Earlier native test gates were passed in that run, since packaging executed.
+
+The explicit synthetic smoke test now checkpoints offline OCR, credential-backend loading, native typing, PDF rendering, workspace/equation preview, DOCX export and tabs/themes. Failures include the stage, bounded exception message and traceback; native multiline mismatch reports expected/actual synthetic text. Startup exceptions are also written by the executable entry point. Worker cleanup occurs before temporary files are removed even on failure.
+
+CI runs the same source smoke before packaging, then runs the packaged test with a 60-second timeout. Reports and stderr are printed on failure and reports appear in the Actions Summary. Both checks require an explicit passed report; old reports are removed. No failed stage is bypassed.
+
+Linux validation: **97 passed, 5 Windows-only tests skipped**; Ruff, pip check and the source desktop-entry smoke passed. The Windows failure remains unresolved pending the new report. This change improves diagnosis only; product version remains 0.2.7 and artifacts identify the new commit.
+
 # Version 0.2.7 — native typing, Qt document history — 2026-10-25
 
 The owner supplied the isolated Windows comparison: all 12 Qt cases matched; each of the three native-control configurations failed 4 of 12 cases (Latin/mathematical text replaced or pasted with Sinhala). Native character-message cases matched. This identifies a native-path operation-dependent problem; it does not prove a Windows defect or establish actual Helakuru compatibility.
