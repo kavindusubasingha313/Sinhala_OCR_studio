@@ -108,9 +108,9 @@ class WindowsTextControl(QWidget):
     def undo_collection(self):
         """Group deletion/insertion via RichEdit's Text Object Model (TOM).
 
-        EM_REPLACESEL alone can leave deletion and insertion as separate undo
-        units when focus returns from the word picker. This collection groups
-        programmatic replacement only; it does not intercept keyboard input.
+        This collection groups programmatic deletion and insertion only;
+        it does not intercept keyboard input. Windows CI exercises the real
+        undo history, including replacements between different scripts.
         """
         ole = ctypes.c_void_p()
         document = ctypes.c_void_p()
@@ -153,7 +153,12 @@ class WindowsTextControl(QWidget):
             raise ValueError("The inserted text exceeds the Windows editor limit.")
         buffer = ctypes.create_unicode_buffer(text)
         with self.undo_collection():
-            self.message(0x00C2, 1, ctypes.addressof(buffer))  # EM_REPLACESEL, undoable
+            # Record removal independently before inserting a different script.
+            # A single replace call lost the original Latin selection on Undo
+            # in Windows CI, even inside a TOM edit collection.
+            empty = ctypes.create_unicode_buffer("")
+            self.message(0x00C2, 1, ctypes.addressof(empty))
+            self.message(0x00C2, 1, ctypes.addressof(buffer))
 
     def focus_native(self):
         if self.hwnd:

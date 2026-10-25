@@ -67,7 +67,7 @@ jobs:
         id: native_input
         run: |
           $env:QT_QPA_PLATFORM = 'windows'
-          python -m pytest tests/test_windows_input.py -v --junitxml=test-results/native-input.xml *>&1 | Tee-Object logs/native-input.log
+          python -m pytest tests/test_windows_input.py -v --capture=tee-sys --junitxml=test-results/native-input.xml *>&1 | Tee-Object logs/native-input.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Package complete offline application
         id: package
@@ -128,3 +128,5 @@ jobs:
             "Open the windows job and expand the failed step to see its error. This summary is not the error log. Debug logs are uploaded separately when available." >> $env:GITHUB_STEP_SUMMARY
           }
           "Successful automation does not establish Helakuru or Microsoft Word compatibility. No stable release is published by this workflow. Complete WINDOWS_COMPATIBILITY_CHECKLIST.md before release promotion." >> $env:GITHUB_STEP_SUMMARY
+          python scripts/summarize-native-tests.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

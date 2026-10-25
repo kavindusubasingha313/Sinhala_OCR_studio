@@ -114,3 +114,25 @@ def test_replacements_have_separate_complete_undo_units(native):
     assert dialog.control.text() == 'වස්තුවක් English'
     dialog.edit_command(0x0454)
     assert dialog.control.text() == 'සිංහල English'
+
+
+@pytest.mark.parametrize('before, after', [
+    ('bad', 'good'), ('bad', 'වස්තුවක්'), ('වස්තුවක්', 'bad'),
+    ('වස්තුවක්', 'සිංහල'), ('😀', 'වස්තුවක්'),
+])
+def test_cross_script_replacement_preserves_original_undo(native, before, after):
+    _, dialog = native
+    control = dialog.control
+    original = before + ' English'
+    control.set_text(original)
+    control.message(0x00B1, 0, len(before.encode('utf-16-le')) // 2)
+    print('Synthetic input:', repr(control.text()), 'selection:', repr(control.selected_text()))
+    control.replace_selection(after)
+    print('After replacement:', repr(control.text()))
+    assert control.text() == after + ' English'
+    dialog.edit_command(0x00C7)
+    print('After one undo:', repr(control.text()))
+    assert control.text() == original
+    dialog.edit_command(0x0454)
+    print('After one redo:', repr(control.text()))
+    assert control.text() == after + ' English'
