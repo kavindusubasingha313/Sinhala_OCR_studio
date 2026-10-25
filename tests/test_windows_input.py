@@ -85,6 +85,8 @@ def test_native_saved_word_replaces_only_selection(native, monkeypatch):
     assert dialog.control.text() == 'වස්තුවක් English'
     dialog.edit_command(0x00C7)
     assert dialog.control.text() == 'bad English'
+    dialog.edit_command(0x0454)
+    assert dialog.control.text() == 'වස්තුවක් English'
 
 
 def test_closed_control_cannot_return_empty_text(native):
@@ -92,3 +94,23 @@ def test_closed_control_cannot_return_empty_text(native):
     dialog.control.dispose()
     with pytest.raises(RuntimeError):
         dialog.control.text()
+
+
+def test_replacements_have_separate_complete_undo_units(native):
+    _, dialog = native
+    dialog.control.set_text('bad English')
+    dialog.control.message(0x00B1, 0, 3)
+    dialog.control.replace_selection('වස්තුවක්')
+    dialog.control.focus_native()
+    length = len('වස්තුවක්'.encode('utf-16-le')) // 2
+    dialog.control.message(0x00B1, 0, length)
+    dialog.control.replace_selection('සිංහල')
+    dialog.control.focus_native()
+    dialog.edit_command(0x00C7)
+    assert dialog.control.text() == 'වස්තුවක් English'
+    dialog.edit_command(0x00C7)
+    assert dialog.control.text() == 'bad English'
+    dialog.edit_command(0x0454)
+    assert dialog.control.text() == 'වස්තුවක් English'
+    dialog.edit_command(0x0454)
+    assert dialog.control.text() == 'සිංහල English'

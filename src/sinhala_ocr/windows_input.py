@@ -4,6 +4,8 @@ No Qt key filter, keyboard hook or character normalization is used. Keystrokes
 are delivered to a real RichEdit HWND rather than a QPlainTextEdit.
 """
 import ctypes
+from contextlib import contextmanager
+from uuid import UUID
 import sys
 
 from PySide6.QtCore import Qt, QTimer
@@ -102,6 +104,47 @@ class WindowsTextControl(QWidget):
         self.message(0x043E, 0, ctypes.addressof(buffer))  # EM_GETSELTEXT
         return buffer.value.replace('\r\n', '\n').replace('\r', '\n')
 
+    @contextmanager
+    def undo_collection(self):
+        """Group deletion/insertion via RichEdit's Text Object Model (TOM).
+
+        EM_REPLACESEL alone can leave deletion and insertion as separate undo
+        units when focus returns from the word picker. This collection groups
+        programmatic replacement only; it does not intercept keyboard input.
+        """
+        ole = ctypes.c_void_p()
+        document = ctypes.c_void_p()
+        if not self.message(0x043C, 0, ctypes.addressof(ole)) or not ole.value:
+            raise RuntimeError("Windows undo support is unavailable; no word was inserted.")
+
+        def method(pointer, slot, result, *arguments):
+            table = ctypes.cast(pointer, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+            return ctypes.WINFUNCTYPE(result, ctypes.c_void_p, *arguments)(table[slot])
+
+        try:
+            # ITextDocument derives from IDispatch; slots 20/21 are
+            # BeginEditCollection/EndEditCollection in the Windows TOM ABI.
+            iid = (ctypes.c_ubyte * 16).from_buffer_copy(UUID('8cc497c0-a1df-11ce-8098-00aa0047be5d').bytes_le)
+            query = method(ole, 0, ctypes.c_int32, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))
+            if query(ole, ctypes.addressof(iid), ctypes.byref(document)) < 0 or not document.value:
+                raise RuntimeError("Windows undo grouping is unavailable; no word was inserted.")
+            self.message(0x0458)  # EM_STOPGROUPTYPING: keep prior typing separate
+            begin = method(document, 20, ctypes.c_int32)
+            end = method(document, 21, ctypes.c_int32)
+            if begin(document) < 0:
+                raise RuntimeError("Could not start an undoable word replacement.")
+            try:
+                yield
+            finally:
+                result = end(document)
+                self.message(0x0458)
+                if result < 0:
+                    raise RuntimeError("Windows could not finish undo grouping. Check the inserted word before applying the page.")
+        finally:
+            if document.value:
+                method(document, 2, ctypes.c_uint32)(document)  # IUnknown.Release
+            method(ole, 2, ctypes.c_uint32)(ole)
+
     def replace_selection(self, text):
         if '\x00' in text:
             raise ValueError("Text cannot contain a null character.")
@@ -109,7 +152,8 @@ class WindowsTextControl(QWidget):
         if proposed // 2 > MAX_TEXT:
             raise ValueError("The inserted text exceeds the Windows editor limit.")
         buffer = ctypes.create_unicode_buffer(text)
-        self.message(0x00C2, 1, ctypes.addressof(buffer))  # EM_REPLACESEL, undoable
+        with self.undo_collection():
+            self.message(0x00C2, 1, ctypes.addressof(buffer))  # EM_REPLACESEL, undoable
 
     def focus_native(self):
         if self.hwnd:

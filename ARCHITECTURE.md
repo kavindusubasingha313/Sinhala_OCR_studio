@@ -1,3 +1,5 @@
+Programmatic native word replacement uses ITextDocument BeginEditCollection/EndEditCollection with explicit typing boundaries, so deletion and insertion form one undo unit. COM references are scoped to each replacement; failure to obtain grouping support prevents insertion. This does not hook or rewrite IME events.
+
 The 0.2.3 native input dialog includes saved-word selection/insertion and explicit Undo/Redo. Selection extraction uses RichEdit UTF-16 character ranges rather than slicing Python text at Win32 positions. Closed control reads fail instead of returning empty text.
 
 ## Windows input and personal vocabulary (0.2.2)

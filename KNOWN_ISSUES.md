@@ -1,3 +1,11 @@
+# Version 0.2.4 — native saved-word Undo repair — 2026-10-25
+
+The owner supplied the Windows failure for run 40153356253: **5 native tests passed, 1 failed**. In `test_native_saved_word_replaces_only_selection`, insertion succeeded but Undo yielded ` English` instead of restoring `bad English`. Packaging was correctly skipped. This is evidence of a replacement-undo defect, not a Helakuru keyboard test.
+
+Saved-word replacements now use RichEdit Text Object Model BeginEditCollection/EndEditCollection to group deletion and insertion into one undo unit, with typing-group boundaries on either side. Native keyboard input is untouched. The failing assertion remains; it now checks Redo too. An additional Windows test checks two consecutive replacements and both Undo/Redo operations. Interface-acquisition errors abort before editing, and COM references are released on success and failure.
+
+Local validation: **86 tests passed, 7 Windows-only tests skipped** on Linux; Ruff and pip check passed. Five new fake-COM tests cover grouping order and interface cleanup on query, begin, edit and end failure. These do not substitute for the seven native Windows tests. The new Windows CI result and real Helakuru typing remain unverified.
+
 # Version 0.2.3 follow-up — 2026-10-25
 
 Saved words, Undo and Redo are now accessible inside the native Windows Sinhala editor. Native selections use UTF-16 positions so Sinhala joiners and characters following supplementary Unicode characters remain intact. A closed/unavailable native control now raises an error rather than returning empty text that could replace the page; failed reads keep the typing window open.

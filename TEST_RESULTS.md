@@ -1,3 +1,11 @@
+# Version 0.2.4 — native saved-word Undo repair — 2026-10-25
+
+The owner supplied the Windows failure for run 40153356253: **5 native tests passed, 1 failed**. In `test_native_saved_word_replaces_only_selection`, insertion succeeded but Undo yielded ` English` instead of restoring `bad English`. Packaging was correctly skipped. This is evidence of a replacement-undo defect, not a Helakuru keyboard test.
+
+Saved-word replacements now use RichEdit Text Object Model BeginEditCollection/EndEditCollection to group deletion and insertion into one undo unit, with typing-group boundaries on either side. Native keyboard input is untouched. The failing assertion remains; it now checks Redo too. An additional Windows test checks two consecutive replacements and both Undo/Redo operations. Interface-acquisition errors abort before editing, and COM references are released on success and failure.
+
+Local validation: **86 tests passed, 7 Windows-only tests skipped** on Linux; Ruff and pip check passed. Five new fake-COM tests cover grouping order and interface cleanup on query, begin, edit and end failure. These do not substitute for the seven native Windows tests. The new Windows CI result and real Helakuru typing remain unverified.
+
 # Version 0.2.3 follow-up validation — 2026-10-25
 
 Executed on Linux: pytest **81 passed, 6 skipped**; Ruff, pip check and source smoke passed. Native Windows tests now also exercise UTF-16 selection following an emoji, a Sinhala ZWJ-containing word, saved-word replacement with undo, and rejection of reads from closed controls. These were collected but skipped on Linux; they must run in the dedicated native Windows CI step. The Actions API returned Forbidden, so this session cannot establish the new Windows CI outcome. No actual Helakuru test is claimed.
