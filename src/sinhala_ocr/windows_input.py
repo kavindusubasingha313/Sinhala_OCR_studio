@@ -55,7 +55,12 @@ class WindowsTextControl(QWidget):
         if not self.hwnd:
             raise RuntimeError("Windows could not create the native text editor.")
         try:
-            self.message(0x0459, 1)  # EM_SETTEXTMODE: plain text, before setting text
+            # Keep independent script/format runs in the native control. The
+            # restricted TM_PLAINTEXT path lost Latin text during cross-script
+            # undo on the Windows runner. Persistence still extracts text only.
+            mode = 0x02 | 0x08 | 0x20  # rich text, multilevel undo, Unicode
+            if self.message(0x0459, mode) != 0 or self.message(0x045A) != mode:
+                raise RuntimeError("Windows could not enable Unicode editing with multilevel undo.")
             self.message(0x0435, 0, MAX_TEXT)  # EM_EXLIMITTEXT, UTF-16 units
             self.font_handle = self.gdi.CreateFontW(-round(20 * self.devicePixelRatioF()), 0, 0, 0, 400,
                                                    0, 0, 0, 1, 0, 0, 5, 0, "Nirmala UI")
@@ -195,7 +200,7 @@ class WindowsInputDialog(QDialog):
         self.setWindowTitle("Windows Sinhala editor · Helakuru input")
         self.resize(850, 620)
         layout = QVBoxLayout(self)
-        label = QLabel("Type here with Helakuru. This uses the Windows RichEdit control instead of Qt text input. Apply transfers your edits to the page; Undo in the page editor can reverse that transfer. Save the project afterwards.")
+        label = QLabel("Type here with Helakuru. This uses the Windows RichEdit control instead of Qt text input. Apply transfers your edits to the page; Undo in the page editor can reverse that transfer. Save the project afterwards. Only text is transferred; use the equation editor for formulas and image objects.")
         label.setWordWrap(True)
         layout.addWidget(label)
         self.control = WindowsTextControl(text, self)

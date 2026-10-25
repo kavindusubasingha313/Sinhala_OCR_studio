@@ -1,3 +1,11 @@
+# Version 0.2.6 — native text-mode investigation — 2026-10-25
+
+The owner's latest Windows screenshot reports **4 failed, 8 passed**: explicit deletion plus insertion still did not fix cross-script Undo. Removing emoji coverage alone cannot fix the independently failing `bad English` restoration.
+
+Emoji-specific fixtures are removed at the owner's request. Non-BMP selection coverage now uses mathematical italic x (𝑥), relevant to physics documents; no emoji recognition feature is implemented. Native RichEdit is now explicitly configured for its standard rich-text mode, multilevel undo and Unicode code pages, with a checked return value and mode readback. This replaces TM_PLAINTEXT's single-format restriction. Application persistence continues to extract Unicode text, not RTF. This is a candidate repair that requires the real Windows tests, not a claim that the cause has been proven or the failure resolved.
+
+Executed on Linux: **86 passed, 12 native tests skipped**, Ruff and pip check passed, source smoke passed. The failing English/Sinhala assertions remain enabled. The Windows test log prints the actual control mode, and the run summary includes failures. Real Helakuru and Word tests remain outstanding.
+
 # Version 0.2.5 — investigate cross-script native Undo — 2026-10-25
 
 The owner supplied the next Windows run: **2 failed, 5 passed**. TOM grouping alone did not fix the saved-word Undo defect. Both failing cases lost `bad` after undoing a Latin-to-Sinhala replacement; the Sinhala selection replacement test passed. The earlier grouping diagnosis was insufficient.

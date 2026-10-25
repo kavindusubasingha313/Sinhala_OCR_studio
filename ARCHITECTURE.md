@@ -1,3 +1,5 @@
+As of 0.2.6 the native RichEdit window uses standard rich-text/Unicode/multilevel-undo mode to investigate cross-script Undo failures in the restricted plain-text mode. Text-only extraction and project persistence remain unchanged; rich formatting and embedded objects are outside the typing-window transfer contract. Actual Windows validation is still required. Emoji recognition is outside product scope; mathematical symbols remain covered.
+
 Native replacement records deletion and insertion separately within the TOM undo collection. A single EM_REPLACESEL remained incorrect for the Latin-to-Sinhala undo fixture on Windows despite grouping; the explicit two-message path is under Windows validation.
 
 Programmatic native word replacement uses ITextDocument BeginEditCollection/EndEditCollection with explicit typing boundaries, so deletion and insertion form one undo unit. COM references are scoped to each replacement; failure to obtain grouping support prevents insertion. This does not hook or rewrite IME events.

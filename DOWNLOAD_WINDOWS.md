@@ -4,7 +4,7 @@ These are experimental test builds, not stable releases. Python and Tesseract do
 
 1. Open this repository on GitHub and choose **Actions** → **Windows experimental build**.
 2. Select the latest run for the intended commit. Only use a run with a green success check. A failed run is not a usable release.
-3. Under **Artifacts**, download **SinhalaOCRStudio-experimental-windows-0.2.5-COMMIT**. GitHub sign-in/access may be required for private repositories.
+3. Under **Artifacts**, download **SinhalaOCRStudio-experimental-windows-0.2.6-COMMIT**. GitHub sign-in/access may be required for private repositories.
 4. Right-click the downloaded ZIP and choose **Extract All**. If it contains another ZIP, extract that too. Open the SinhalaOCRStudio folder.
 5. Double-click **SinhalaOCRStudio.exe**. Keep the entire folder, including `_internal`, together. Do not run from inside the ZIP or copy only the EXE.
 
@@ -16,8 +16,8 @@ If something fails, enable **Diagnostic logging**, repeat the operation and choo
 
 No downloadable build exists until this workflow has run successfully on GitHub. Linux tests do not prove that the Windows executable launches.
 
-For version 0.2.5, use Import files to open several documents, then switch tabs and page thumbnails. The previous requirement to close one document before opening another is removed. Save each edited tab as a project before closing it. Advanced OCR is optional and requires your own API account/key plus per-page upload consent; no AI charges occur from ordinary offline OCR.
+For version 0.2.6, use Import files to open several documents, then switch tabs and page thumbnails. The previous requirement to close one document before opening another is removed. Save each edited tab as a project before closing it. Advanced OCR is optional and requires your own API account/key plus per-page upload consent; no AI charges occur from ordinary offline OCR.
 
-The 0.2.5 build also includes **Editable-Equation-Check.docx**, a synthetic sample. Open it in Microsoft Word, enable editing if prompted, and click a formula. Equation Tools should appear, and fraction components should be editable. This checks Word compatibility independently of recognition accuracy. If it shows picture handles instead, report your Word version and which formula you selected.
+The 0.2.6 build also includes **Editable-Equation-Check.docx**, a synthetic sample. Open it in Microsoft Word, enable editing if prompted, and click a formula. Equation Tools should appear, and fraction components should be editable. This checks Word compatibility independently of recognition accuracy. If it shows picture handles instead, report your Word version and which formula you selected.
 
-For direct Helakuru typing in 0.2.5, use **Windows Sinhala editor** above the text area, then Apply and Save project. The **Saved words** button stores reviewed spellings for later manual insertion.
+For direct Helakuru typing in 0.2.6, use **Windows Sinhala editor** above the text area, then Apply and Save project. The **Saved words** button stores reviewed spellings for later manual insertion.
