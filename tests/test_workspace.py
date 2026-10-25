@@ -1,4 +1,5 @@
 import os
+import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PIL import Image
@@ -246,6 +247,7 @@ def test_native_input_apply_is_undoable_and_cancel_preserves_page(tmp_path, monk
     window.display_document(import_document(path))
     drain(application)
     window.editor.insertPlainText('original වවවව')
+    window.editor.selectAll()
     window.accept()
     class FakeDialog:
         result_text = 'වස්තුවක් ශ්‍රී'
@@ -298,6 +300,45 @@ def test_saved_word_replaces_only_selection_with_undo(tmp_path, monkeypatch):
     assert window.document.text == 'වස්තුවක් English'
     window.editor.undo()
     assert window.document.text == 'bad English'
+    assert not errors
+    window.document = None
+    window.close()
+
+
+@pytest.mark.parametrize('selection, typed, expected', [
+    (True, 'වස්තුවක්', 'වස්තුවක් English'),
+    (False, 'වස්තුවක්', 'වස්තුවක්bad English'),
+    (True, '', 'bad English'),
+])
+def test_typing_pad_only_changes_its_target(tmp_path, monkeypatch, selection, typed, expected):
+    from sinhala_ocr import windows_input
+    from PySide6.QtWidgets import QDialog
+    application, window, errors = make_window(tmp_path, monkeypatch)
+    path = tmp_path / 'input.png'
+    Image.new('RGB', (10, 10)).save(path)
+    window.display_document(import_document(path))
+    drain(application)
+    window.editor.insertPlainText('bad English')
+    cursor = window.editor.textCursor()
+    cursor.setPosition(0)
+    if selection:
+        cursor.setPosition(3, cursor.MoveMode.KeepAnchor)
+    window.editor.setTextCursor(cursor)
+    class FakeDialog:
+        result_text = typed
+        def __init__(self, context, parent):
+            assert context == ('bad' if selection else '')
+            assert parent.document.text == 'bad English'
+        def exec(self):
+            return QDialog.DialogCode.Accepted
+    monkeypatch.setattr(windows_input, 'WindowsInputDialog', FakeDialog)
+    window.windows_sinhala_editor()
+    assert window.document.text == expected
+    if typed:
+        window.editor.undo()
+        assert window.document.text == 'bad English'
+        window.editor.redo()
+        assert window.document.text == expected
     assert not errors
     window.document = None
     window.close()

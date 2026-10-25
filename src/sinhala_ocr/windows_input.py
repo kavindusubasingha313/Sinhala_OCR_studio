@@ -191,7 +191,7 @@ class WindowsTextControl(QWidget):
             self.font_handle = None
 
 
-class WindowsInputDialog(QDialog):
+class DiagnosticWindowsEditor(QDialog):
     """Explicit Apply/Cancel protects page text until editing is complete."""
     def __init__(self, text, parent=None):
         super().__init__(parent)
@@ -257,5 +257,59 @@ class WindowsInputDialog(QDialog):
                                     QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
                                     QMessageBox.StandardButton.Cancel) != QMessageBox.StandardButton.Discard:
                 return
+        self.control.dispose()
+        super().reject()
+
+
+class WindowsInputDialog(QDialog):
+    """Blank native typing pad. Document replacement and history belong to Qt."""
+    def __init__(self, selection='', parent=None):
+        super().__init__(parent)
+        self.result_text = ''
+        self.setWindowTitle('Sinhala typing pad · insert into document')
+        self.resize(850, 620)
+        layout = QVBoxLayout(self)
+        label = QLabel('Type new text here using Helakuru, then choose Insert into document. Use the main document editor for pasting, Saved words and undoing a replacement. Cancel keeps your document unchanged.')
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        context = QLabel('Replace selected text: ' + selection[:400] if selection else 'Insert at the document cursor.')
+        context.setTextFormat(Qt.TextFormat.PlainText)
+        context.setWordWrap(True)
+        layout.addWidget(context)
+        # Never seed the native control with original document text. The
+        # independently reproduced replacement/paste undo defect cannot delete
+        # the page's selected text here; it stays in its Qt QTextDocument.
+        self.control = WindowsTextControl('', self)
+        layout.addWidget(self.control, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText('Insert into document')
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        QTimer.singleShot(0, self.control.focus_native)
+
+    def accept(self):
+        try:
+            text = self.control.text()
+            if not text:
+                QMessageBox.information(self, 'Type some text first', 'The typing pad is empty. Your selected text will remain unchanged.')
+                return
+        except RuntimeError as error:
+            QMessageBox.warning(self, 'Text could not be read', str(error))
+            return
+        self.result_text = text
+        self.control.dispose()
+        super().accept()
+
+    def reject(self):
+        try:
+            changed = self.control.hwnd and bool(self.control.text())
+        except RuntimeError as error:
+            QMessageBox.warning(self, 'Text could not be read', str(error))
+            return
+        if changed and QMessageBox.question(self, 'Discard typing?', 'Discard the text in this typing pad? Your document is unchanged.',
+                                            QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
+                                            QMessageBox.StandardButton.Cancel) != QMessageBox.StandardButton.Discard:
+            return
         self.control.dispose()
         super().reject()

@@ -50,6 +50,11 @@ jobs:
           $process = Start-Process dist/SinhalaInputLab/SinhalaInputLab.exe -ArgumentList '--automatic --output packaged-input-results' -PassThru
           if (!$process.WaitForExit(420000)) { $process.Kill(); throw 'Packaged diagnostic timed out' }
           if ($process.ExitCode -ne 0) { throw 'Packaged diagnostic failed to execute' }
+      - name: Retired native editor regression evidence (known failures)
+        if: always() && steps.package.outcome == 'success'
+        run: |
+          python -m pytest diagnostics/test_retired_native_editor.py -v --capture=tee-sys --junitxml=input-lab-results/retired-native.xml *>&1 | Tee-Object input-lab-results/retired-native.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload diagnostic executable (not an OCR release)
         if: always() && steps.package.outcome == 'success'
         uses: actions/upload-artifact@v4
@@ -70,6 +75,6 @@ jobs:
         if: always()
         run: |
           '## Diagnostic execution only — no product release approval' >> $env:GITHUB_STEP_SUMMARY
-          'Green here means the investigation ran, not that Undo or Helakuru passed. Read the comparison below. The application workflow retains its failing release gates.' >> $env:GITHUB_STEP_SUMMARY
+          'The retired-editor regression step retains known failures; it is not the production typing-pad release gate. Diagnostic observations do not establish Helakuru compatibility. Read the comparison below. The application workflow retains its failing release gates.' >> $env:GITHUB_STEP_SUMMARY
           if (Test-Path input-lab-results/SUMMARY.md) { Get-Content input-lab-results/SUMMARY.md >> $env:GITHUB_STEP_SUMMARY }
           if (Test-Path packaged-input-results/SUMMARY.md) { Get-Content packaged-input-results/SUMMARY.md >> $env:GITHUB_STEP_SUMMARY }

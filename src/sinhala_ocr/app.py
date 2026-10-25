@@ -179,7 +179,7 @@ class MainWindow(QMainWindow):
         editing.addStretch()
         text_layout.addLayout(editing)
         if sys.platform == "win32":
-            text_layout.addWidget(button("Windows Sinhala editor · type with Helakuru", self.windows_sinhala_editor, "primary"))
+            text_layout.addWidget(button("Sinhala typing pad · Helakuru", self.windows_sinhala_editor, "primary"))
         self.editor = UnicodeEditor()
         self.editor.textChanged.connect(self.edited)
         text_layout.addWidget(self.editor, 1)
@@ -258,17 +258,19 @@ class MainWindow(QMainWindow):
         self.commit_input()
         from .windows_input import WindowsInputDialog
         original = self.editor.toPlainText()
+        cursor = self.editor.textCursor()
+        session, page = self.session, self.document.active_page
         try:
-            dialog = WindowsInputDialog(original, self)
+            dialog = WindowsInputDialog(cursor.selectedText(), self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 # One Qt undo command; approved text changes only after Apply.
-                if self.editor.toPlainText() != original:
+                if self.session is not session or self.document.active_page != page or self.editor.toPlainText() != original:
                     self.error("The page changed while typing. Your native editor result was not applied.")
                     return
-                if dialog.result_text != original:
-                    cursor = self.editor.textCursor()
-                    cursor.select(cursor.SelectionType.Document)
+                if dialog.result_text:
+                    cursor.beginEditBlock()
                     cursor.insertText(dialog.result_text)
+                    cursor.endEditBlock()
                     self.editor.setTextCursor(cursor)
         except (ValueError, RuntimeError, OSError) as error:
             self.error(str(error))
@@ -883,7 +885,9 @@ def smoke_test(app, window):
                     native = WindowsInputDialog("වස්තුවක්\nසිංහල x²", window)
                     native.show()
                     app.processEvents()
-                    assert native.control.text() == "වස්තුවක්\nසිංහල x²"
+                    assert native.control.text() == ""
+                    for character in "වස්තුවක්\nසිංහල x²":
+                        native.control.message(0x102, 13 if character == "\n" else ord(character))
                     native.accept()
                     assert native.result_text == "වස්තුවක්\nසිංහල x²"
             pdf = Path(folder) / "pages.pdf"

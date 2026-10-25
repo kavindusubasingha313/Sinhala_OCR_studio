@@ -7,7 +7,7 @@ This is a separate typing experiment, not an updated OCR application or a stable
 3. For real Helakuru testing, download the **SinhalaInputLab-DIAGNOSTIC-…** artifact. Extract the artifact ZIP and the build ZIP inside it. Keep the entire folder together and open **SinhalaInputLab.exe**.
 4. In its Qt text box, type **වස්තුවක්** using Helakuru. Repeat in Notepad with the same input mode.
 5. Open each standalone Windows editor with the buttons. These run in separate processes without importing Qt. Type the same word, select it, replace it, and press Ctrl+Z and Ctrl+Y. Repeat by pasting a word copied from Notepad.
-6. Open **current app Windows editor** and repeat. This is the app's integration inside Qt.
+6. Open **current app typing pad** to test new typing in the blank native control. In the actual app, insertion and document Undo use Qt. The automated `app_native` worker deliberately still exercises the retired native replacement backend.
 7. Report which editor repeated letters or lost the original text on Undo, plus Windows version, Helakuru version and phonetic/Wijesekara mode. Use only disposable samples; these windows do not save your typing. Close every standalone window when finished.
 
 The manual lab sends no network requests, records no typing and uploads nothing. Its automatic CI runs use fixed synthetic samples and record their text states. Automated clipboard tests run only in GitHub's disposable runner; they are blocked on an ordinary computer. Programmatically injected character messages are **not** genuine Helakuru interaction or human keyboard input.
@@ -26,3 +26,5 @@ The manual lab sends no network requests, records no typing and uploads nothing.
 Compare Latin-to-Latin and Latin-to-Sinhala replacement on fresh controls first. If only the app control fails, investigate its bridge. If raw controls fail too, investigate the native operation/control behavior before changing the app again. If only synthetic character cases differ, inspect grouping semantics. Actual typing must still be checked manually.
 
 The existing application workflow remains unchanged and continues to block release packaging on failed native tests. A green diagnostic workflow means the experiment ran; it does not approve an application release.
+
+The archived `test_retired_native_editor.py` tests retain the old failing assertions and run explicitly in the diagnostic workflow. That step can remain red: it reproduces the retired native editing defect. Production tests now validate the new blank-pad-to-Qt transfer. No diagnostic mismatch has been reclassified as a passing native fix.

@@ -1,3 +1,9 @@
+# Current input architecture (0.2.7)
+
+QTextDocument owns document text and all replacement/Undo/Redo operations. WindowsInputDialog is a blank native typing pad with read-only selection context. Its Insert action transfers new Unicode text through the captured QTextCursor in one edit block; it never seeds RichEdit with original document content. Empty results are ignored; page/session/text changes prevent stale insertion. Saved vocabulary remains in the main Qt editor. DiagnosticWindowsEditor retains the former full-document native implementation solely for reproduction. Diagnostic native replacement failures are not treated as product successes.
+
+Technology decision: retain Python 3.12 and PySide6 6.8.3, whose text engine is Qt C++; use the OS RichEdit control only for native typing. The supplied matrix supports Qt replacement history, while actual Helakuru must be tested separately. C#/WPF or WinUI could be evaluated later if needed, but neither a language switch nor an accuracy/performance advantage is established by current evidence. No new dependency was added.
+
 `diagnostics/input_lab.py` is an isolated investigation harness, not production code. Raw Win32 workers use only the standard library and run in separate processes from Qt; Qt baseline and current app workers provide comparison. The manual lab is packaged in its own diagnostic-only workflow. Synthetic clipboard probing is restricted to GitHub Actions; manual typing is neither recorded nor uploaded.
 
 As of 0.2.6 the native RichEdit window uses standard rich-text/Unicode/multilevel-undo mode to investigate cross-script Undo failures in the restricted plain-text mode. Text-only extraction and project persistence remain unchanged; rich formatting and embedded objects are outside the typing-window transfer contract. Actual Windows validation is still required. Emoji recognition is outside product scope; mathematical symbols remain covered.

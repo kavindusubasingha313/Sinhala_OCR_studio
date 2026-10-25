@@ -2,7 +2,7 @@ For the current input failure investigation, use the separate **Windows input in
 
 # Setup and use
 
-For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.6** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
+For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.7** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
 
 ## Workspace
 
@@ -14,9 +14,9 @@ For a packaged Windows build, Python and Tesseract do not need separate installa
 
 ## Sinhala input and remembered words
 
-On Windows, open a document and choose **Windows Sinhala editor · type with Helakuru** above the main text editor. Type using your installed Helakuru keyboard in this native Windows control, then choose **Apply** to transfer the page back. Apply is undoable from the main editor. **Cancel** leaves the page unchanged and asks before discarding typing. Save the project afterwards. This bypass is awaiting actual Helakuru verification; the ordinary Qt editor's direct-input problem is not claimed fixed. The previous **Sinhala typing** diagnostic button is now called **Keyboard check**.
+On Windows, select the word you want to replace (or place the cursor where new text belongs), then choose **Sinhala typing pad · Helakuru**. Type new text in the blank pad, then choose **Insert into document**. The original selection remains in your document until insertion. Use the main editor's **Undo** and **Redo** to reverse/reapply the entire insertion. Cancel leaves the page unchanged and asks before discarding unsent typing. Save your project afterwards.
 
-The Windows Sinhala editor also provides **Undo**, **Redo**, and **Saved words** directly. Select a word there to save or replace it without applying the entire page first.
+Use the main editor for **paste, Saved words and document corrections**. The typing pad is for direct keyboard entry; native replacement/paste Undo remains unreliable. Actual Helakuru input still requires verification. The keyboard diagnostic panel remains available as **Keyboard check**.
 
 To remember a complex spelling, select the correctly spelled word in the page editor, open **Saved words**, and choose **Save reviewed spelling**. In a later document, select an incorrect word, open **Saved words**, pick a saved suggestion and choose **Insert selected word**. It replaces only the selection and supports Undo. You can also search, add pasted words and delete saved words. Entries stay on your computer, outside project files; nothing is automatically corrected or uploaded. This feature does not train the recognition model.
 

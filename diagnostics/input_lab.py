@@ -276,7 +276,7 @@ def manual():
         button = QPushButton('Open standalone Windows editor · ' + ('plain text' if plain else 'standard rich text'))
         button.clicked.connect(lambda checked=False, p=plain: children.append(subprocess.Popen(command('--manual-native', 'plain' if p else 'rich'))))
         layout.addWidget(button)
-    embedded = QPushButton('Open current app Windows editor')
+    embedded = QPushButton('Open current app typing pad (blank; inserts text on confirmation)')
     embedded.clicked.connect(lambda: WindowsInputDialog('', window).exec())
     layout.addWidget(embedded)
     window.show()

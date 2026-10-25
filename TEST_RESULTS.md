@@ -1,3 +1,13 @@
+# Version 0.2.7 — native typing, Qt document history — 2026-10-25
+
+The owner supplied the isolated Windows comparison: all 12 Qt cases matched; each of the three native-control configurations failed 4 of 12 cases (Latin/mathematical text replaced or pasted with Sinhala). Native character-message cases matched. This identifies a native-path operation-dependent problem; it does not prove a Windows defect or establish actual Helakuru compatibility.
+
+Production now uses a **blank Sinhala typing pad** for native keyboard input. The original selection stays in Qt and is shown as read-only context, never loaded into the native pad. **Insert into document** replaces only that selection, or inserts at the cursor, as one Qt undo block. Empty results and Cancel cannot erase the selection. Saved words, paste and document Undo/Redo remain in the main Qt editor. No normalization or keystroke hooks were added. Native-pad paste/undo behavior remains unreliable; use the pad for new typing, and the main editor for paste/replacement.
+
+The retired full-document native editor and every prior regression assertion remain in `diagnostics/test_retired_native_editor.py`; the investigation workflow runs them explicitly and may still report known failures. They are no longer the production gate because that editor path is no longer exposed in the application. The production gate now tests the blank pad, explicit transfer, empty/Cancel protection, original-text restoration and Redo through Qt. No native defect is claimed fixed.
+
+Local validation: **94 passed, 5 Windows-only tests skipped**, Ruff, pip check and source smoke passed. The new Windows product build and real Helakuru typing still require verification. Implementation remains Python/PySide6 (Qt's C++ editor) with the Windows system RichEdit control for typing. No additional package, model, API or language is required. A language rewrite would not by itself repair behavior reproduced outside the application.
+
 # Isolated input diagnostic validation — 2026-10-25
 
 Local Linux suite: **91 passed, 12 Windows-only skipped**. Ruff, pip check and git diff --check passed. New tests validate comparison reporting with preserved mismatch text, continuation after worker exit/timeout, and refusal of automated clipboard writes outside GitHub Actions. These are harness checks, not execution of the native controls.

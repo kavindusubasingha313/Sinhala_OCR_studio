@@ -1,3 +1,13 @@
+# 0.2.7 production input gate
+
+- [ ] Select `bad` in `bad English`, open the blank Sinhala typing pad, type වස්තුවක් with real Helakuru, insert, Undo and Redo in the document. The English suffix and original word must be preserved.
+- [ ] Repeat at a cursor without a selection, with Sinhala conjuncts, mixed English and mathematical symbols, on multiple pages. Save/reopen and export to verify exact text.
+- [ ] An empty pad and Cancel cannot erase selected document text; discarding unsent typing requires confirmation.
+- [ ] Paste and Saved words in the main Qt editor preserve Undo/Redo. The pad is for new typing; the native paste/replacement defect remains documented.
+- [ ] Record Windows and Helakuru versions and phonetic/Wijesekara modes. Synthetic CI messages are not a substitute for this check.
+
+Older checklists below describe retired full-document native-editor behavior; use the current gate above for release.
+
 # 0.2.2 critical Sinhala input checks
 
 - [ ] In **Windows Sinhala editor**, type වස්තුවක්, ශ්‍රී, mixed Sinhala/English, legitimate repeated letters, vowel signs, conjuncts and punctuation using actual Helakuru. Compare Unicode with Notepad; record Windows/Helakuru versions and phonetic/Wijesekara mode.
