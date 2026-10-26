@@ -1,3 +1,5 @@
+0.2.8 adds a scrollable, scaled region selector with source-pixel coordinate mapping. Export validates placement page by page before selecting a destination and directs the user to the first broken anchor. The blank-page OCR queue processes sequential background tasks with explicit per-page review; cancellation/failure stops it, and nonempty/protected pages are skipped. AI equation recognition reuses the existing provider and consent layer. Input composition remains unchanged.
+
 `synthetic_input.py` generates explicit Enter key sequences for smoke fixtures. It is never attached to the user input pipeline; native Windows/Helakuru composition remains unfiltered. Multiline fixtures preserve exact newline assertions.
 
 Explicit synthetic smoke execution uses `smoke_report.py` for checkpoint/error JSON. It never opens user documents or reads provider keys. CI separately checks source and frozen execution, publishes errors and prevents artifact release without a passed report. Normal application diagnostics retain their existing privacy restrictions.

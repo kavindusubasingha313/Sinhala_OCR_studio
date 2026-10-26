@@ -1,3 +1,16 @@
+# 0.2.8 workspace repair — 2026-10-26
+
+Owner reports export blocked by a missing equation marker, blank unrecognized pages, repeated Sinhala characters in the Qt Keyboard check, and legacy-looking PDF text. The preceding Windows build was reported successful by the owner; genuine input compatibility is not established.
+
+- Region marking now supports zoom out/in, Fit, 100%, and scrollbars. Selection maps back to original pixels and is retained while zooming.
+- Export preflight opens the first page with invalid equation placement and selects a missing equation. The user restores its marker at the intended position or explicitly rejects it; no equation is silently discarded or appended at a guessed position.
+- Recognize blank pages queues only pages without text, approval or equations. It uses visual offline OCR, reviews each result, and stops on Cancel or an error. Existing pages remain protected. This is not automatic OCR of every imported page.
+- Garbled PDF text has a visible Recognize visual page action. No unverified legacy encoding conversion is applied.
+- Equations has a direct Recognize page equations · AI action, enabling LaTeX and using existing credential/consent/review controls. Offline OCR remains text-only; no offline equation detector/model or recognition accuracy improvement is claimed. Zero returned equations can still occur.
+- Keyboard check is explicitly labelled as the Qt diagnostic with its known direct-input defect. Native typing-pad input is unchanged pending clarification/testing. Notepad then paste remains the owner-confirmed workaround. Dictionary suggestions cannot repair an input-method event defect.
+
+Validation: Linux pytest **102 passed, 7 Windows-only skipped**; Ruff, pip check, diff whitespace check and source desktop-entry smoke passed (offline OCR, PDF rendering, workspace/equation preview, DOCX export, tabs/themes). Smoke emitted a font-cache warning but completed with a passed JSON report. Windows CI, extended genuine Helakuru typing and Word 2019 rendering remain unverified for this commit.
+
 # Smoke Enter-event correction — 2026-10-25
 
 The owner supplied an actionable source-smoke failure at `native_typing_pad`: expected `වස්තුවක්\nසිංහල x²`, received `වස්තුවක්සිංහල x²`. Offline OCR and credential-backend stages passed. The missing newline was in a synthetic character-only input sequence, not evidence that genuine Helakuru typing or a packaged dependency failed.

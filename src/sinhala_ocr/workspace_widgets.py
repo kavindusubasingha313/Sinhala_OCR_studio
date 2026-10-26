@@ -95,7 +95,7 @@ class CandidateDialog(QDialog):
         self.text.setReadOnly(True)
         self.text.setPlainText(text)
         layout.addWidget(self.text)
-        layout.addWidget(QLabel(f"{equation_count} equation(s) will remain separate and editable in the equation editor."))
+        layout.addWidget(QLabel(f"{equation_count} separate equation(s) returned. Review their sources before export." if ai else "Offline text OCR does not recognize separate equations. Use Equations → Recognize page equations · AI, or enter LaTeX manually."))
         self.confirm = QCheckBox("Replace this page’s text and equations; preserve the previous version in page history")
         layout.addWidget(self.confirm)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -166,10 +166,10 @@ class AiSettingsDialog(QDialog):
 class KeyboardDialog(QDialog):
     def __init__(self, settings, apply_font, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Sinhala typing · font and keyboard check")
+        self.setWindowTitle("Qt font diagnostic — use Sinhala typing pad for Helakuru")
         self.resize(700, 450)
         layout = QVBoxLayout(self)
-        help_text = QLabel("Select your installed Helakuru Sinhala input mode in Windows, click the typing area, and type වස්තුවක්. This panel preserves exactly what the input method commits. Try another font if the same text has misplaced vowel signs. Repeated letters in the Unicode output indicate an input sequence problem, not just a font. If direct typing repeats letters, compare typing in Windows Notepad and paste that text here with Ctrl+V. Correct pasted text isolates the problem to direct input; preserve your text rather than deleting repeated letters automatically.")
+        help_text = QLabel("This is the Qt diagnostic editor, not the native Sinhala typing pad. Direct Helakuru typing here has a reported repeated-character defect. Use the main window’s Sinhala typing pad button for native input; Notepad then paste remains the confirmed workaround.\n\nSelect your installed Helakuru Sinhala input mode in Windows, click the typing area, and type වස්තුවක්. This panel preserves exactly what the input method commits. Try another font if the same text has misplaced vowel signs. Repeated letters in the Unicode output indicate an input sequence problem, not just a font. If direct typing repeats letters, compare typing in Windows Notepad and paste that text here with Ctrl+V. Correct pasted text isolates the problem to direct input; preserve your text rather than deleting repeated letters automatically.")
         help_text.setWordWrap(True)
         layout.addWidget(help_text)
         combo = QComboBox()

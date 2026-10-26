@@ -342,3 +342,56 @@ def test_typing_pad_only_changes_its_target(tmp_path, monkeypatch, selection, ty
     assert not errors
     window.document = None
     window.close()
+
+
+def test_export_locates_missing_equation_without_deleting_it(tmp_path, monkeypatch):
+    from sinhala_ocr.core import Document, DocumentPage
+    from sinhala_ocr.equations import Equation
+    application, window, errors = make_window(tmp_path, monkeypatch)
+    equation = Equation(latex='x=1', status='accepted')
+    document = Document('missing.pdf', pages=[DocumentPage(text='first'), DocumentPage(text='second', equations=[equation])])
+    monkeypatch.setattr(window, 'request_preview', lambda: None)
+    monkeypatch.setattr(window, 'start_thumbnails', lambda _: None)
+    window.display_document(document)
+    assert not window.review_export_placement()
+    assert document.active_page == 1
+    assert window.output_tabs.currentIndex() == 1
+    assert 'Page 2' in errors[-1]
+    assert document.equations == [equation]
+    window.insert_equation_marker()
+    assert window.review_export_placement()
+    window.editor.undo()
+    assert not window.review_export_placement()
+    assert document.equations == [equation]
+    window.document = None
+    window.close()
+    application.processEvents()
+
+
+def test_blank_page_queue_skips_protected_pages_and_stops_on_cancel(tmp_path, monkeypatch):
+    from sinhala_ocr.core import Document, DocumentPage, Recognition
+    from sinhala_ocr.equations import Equation
+    application, window, errors = make_window(tmp_path, monkeypatch)
+    monkeypatch.setattr(window, 'request_preview', lambda: None)
+    monkeypatch.setattr(window, 'start_thumbnails', lambda _: None)
+    document = Document('missing.pdf', pages=[DocumentPage(text='manual'), DocumentPage(approved=True),
+                        DocumentPage(equations=[Equation()]), DocumentPage(), DocumentPage()])
+    document.activate_page(0)
+    window.display_document(document)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args: QMessageBox.StandardButton.Yes)
+    processed = []
+    def recognize(snapshot, index, force):
+        processed.append((index, force))
+        return Recognition('recognized', 'test')
+    monkeypatch.setattr(app_module, 'recognize_page', recognize)
+    monkeypatch.setattr(window, 'background', lambda operation, complete: complete(operation()))
+    monkeypatch.setattr(window, 'review_candidate', lambda *args: False)
+    window.recognize_blank_pages()
+    application.processEvents()
+    assert processed == [(3, True)]
+    assert document.pages[0].text == 'manual'
+    assert document.pages[1].approved
+    assert document.pages[2].equations
+    assert document.pages[3].text == document.pages[4].text == ''
+    window.document = None
+    window.close()

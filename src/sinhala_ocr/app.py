@@ -105,6 +105,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(header)
         actions = row(button("＋ Import files", self.open_document, "primary"),
                       button("Recognize page", self.recognize),
+                      button("Recognize blank pages", self.recognize_blank_pages),
                       button("✦ Advanced OCR", self.advanced_ocr, "ai"))
         actions.addStretch()
         actions.addWidget(button("Save project", self.save))
@@ -182,17 +183,19 @@ class MainWindow(QMainWindow):
             text_layout.addWidget(button("Sinhala typing pad · Helakuru", self.windows_sinhala_editor, "primary"))
         self.editor = UnicodeEditor()
         self.editor.textChanged.connect(self.edited)
+        text_layout.addWidget(button("Garbled PDF text? Recognize visual page", lambda: self.recognize(force_image=True)))
         text_layout.addWidget(self.editor, 1)
         text_layout.addWidget(button("✓ Accept this page", self.accept, "primary"))
         self.output_tabs.addTab(text_panel, "Text editor")
         equations_panel = QWidget()
         equations_panel.setObjectName("outputPanel")
         eq_layout = QVBoxLayout(equations_panel)
-        equation_hint = QLabel("Equations have editable LaTeX source. Word export uses native equation objects by default.")
+        equation_hint = QLabel("Offline OCR extracts text only. To recognize separate equations, use AI below (API key and upload consent required). Mark region saves a crop for manual editing or AI recognition.")
         equation_hint.setWordWrap(True)
         equation_hint.setObjectName("muted")
         eq_layout.addWidget(equation_hint)
         eq_layout.addLayout(row(button("Add equation", self.add_equation), button("Mark region", self.mark_equation)))
+        eq_layout.addWidget(button("Recognize page equations · AI", self.recognize_page_equations, "ai"))
         self.equation_list = QListWidget()
         self.equation_list.itemDoubleClicked.connect(lambda _: self.edit_equation())
         eq_layout.addWidget(self.equation_list, 1)
@@ -661,6 +664,8 @@ class MainWindow(QMainWindow):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.apply_candidate(session, index, text, equations)
             self.statusBar().showMessage("Suggestion applied · Review equations, then Save project")
+            return True
+        return False
 
     def restore_result(self):
         if not self.document:
@@ -683,6 +688,40 @@ class MainWindow(QMainWindow):
         session, index = self.session, self.document.active_page
         snapshot = deepcopy(self.document)
         self.background(lambda: recognize_page(snapshot, index, force_image), lambda result: self.review_candidate(session, index, result.text))
+
+    def recognize_page_equations(self):
+        if self.document and not self.busy:
+            self.latex_toggle.setChecked(True)
+            self.advanced_ocr()
+
+    def recognize_blank_pages(self):
+        if not self.document or self.busy:
+            return
+        self.commit_input()
+        session = self.session
+        pending = [i for i, page in enumerate(self.document.pages)
+                   if not page.text.strip() and not page.approved and not page.equations]
+        if not pending:
+            self.error("No blank, unapproved pages remain. For garbled PDF text, select its page and use Recognize visual page.")
+            return
+        if QMessageBox.question(self, "Recognize blank pages?",
+                                f"Process {len(pending)} blank pages offline? Each result is reviewed separately. Cancel a review to stop. Existing text, equations and approved pages are skipped.") != QMessageBox.StandardButton.Yes:
+            return
+        def next_page():
+            if session not in self.sessions or not pending:
+                return
+            index = pending.pop(0)
+            page = session.document.pages[index]
+            if page.text.strip() or page.approved or page.equations:
+                next_page()
+                return
+            snapshot = deepcopy(session.document)
+            def complete(result):
+                if self.review_candidate(session, index, result.text):
+                    QTimer.singleShot(0, next_page)
+            self.background(lambda: recognize_page(snapshot, index, True), complete)
+            self.statusBar().showMessage(f"Recognizing page {index + 1} · {len(pending)} remaining · Cancel review to stop")
+        next_page()
 
     def ai_settings(self):
         return AiSettingsDialog(self.settings, self).exec()
@@ -754,10 +793,29 @@ class MainWindow(QMainWindow):
                 self.review_candidate(session, index, result.text, result.equations, ai=True)
         self.background(operation, complete)
 
+    def review_export_placement(self):
+        """Locate broken anchors without discarding equations or guessing placement."""
+        from .equation_export import document_parts
+        self.document.capture_page()
+        for index, page in enumerate(self.document.pages):
+            try:
+                document_parts(Document(self.document.source, page.text, equations=page.equations))
+            except EquationError as error:
+                self.pages.setCurrentRow(index)
+                self.output_tabs.setCurrentIndex(1)
+                missing = next((i for i, eq in enumerate(page.equations)
+                                if eq.status != "rejected" and eq.marker not in page.text), 0)
+                self.equation_list.setCurrentRow(missing)
+                self.error(f"Page {index + 1}: {error}\n\nThe affected page is now open. For a missing reference, place the cursor in the text where this equation belongs, then choose Insert in text. To omit it, open Edit source & preview and Reject it. Export again after review.")
+                return False
+        return True
+
     def export(self):
         if not self.document or self.busy:
             return
         self.commit_input()
+        if not self.review_export_placement():
+            return
         name, _ = QFileDialog.getSaveFileName(self, "Export all pages · editable Word equations", Path(self.document.source).stem + ".docx", "Word with editable equations (*.docx);;Unicode text (*.txt);;Markdown (*.md);;LaTeX source (*.tex)")
         if not name:
             return

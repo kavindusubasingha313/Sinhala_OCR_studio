@@ -105,3 +105,22 @@ def test_new_import_uses_preference_and_markers_preserve_selected_text(tmp_path,
     window.document = None
     window.close()
     app.processEvents()
+
+
+def test_region_zoom_retains_crop_and_scrollable_dialog():
+    from sinhala_ocr.equation_ui import RegionDialog
+    app = QApplication.instance() or QApplication([])
+    image = QPixmap(1800, 1200)
+    dialog = RegionDialog(image)
+    dialog.selector.selection = QRect(10, 20, 100, 50)
+    before = dialog.selector.source_bbox()
+    dialog.set_zoom(1)
+    assert dialog.selector.source_bbox() == before
+    dialog.set_zoom(2)
+    assert dialog.selector.source_bbox() == before
+    assert dialog.scroll.widget() is dialog.selector
+    assert dialog.selector.width() == 3600
+    dialog.set_zoom(0.5)
+    assert dialog.selector.source_bbox() == before
+    dialog.close()
+    app.processEvents()

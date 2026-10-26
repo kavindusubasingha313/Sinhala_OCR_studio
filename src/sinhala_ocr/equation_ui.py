@@ -114,12 +114,28 @@ class EquationEditor(QDialog):
 class RegionSelector(QLabel):
     def __init__(self, pixmap):
         super().__init__()
+        self.original = pixmap
         self.original_size = pixmap.size()
         self.setPixmap(pixmap.scaled(900, 600, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self.setFixedSize(self.pixmap().size())
         self.band = QRubberBand(QRubberBand.Shape.Rectangle, self)
         self.origin = None
         self.selection = QRect()
+
+    def set_zoom(self, scale):
+        bbox = self.source_bbox() if self.selection.width() >= 3 and self.selection.height() >= 3 else None
+        scale = max(0.1, min(4.0, scale))
+        self.setPixmap(self.original.scaled(
+            round(self.original_size.width() * scale), round(self.original_size.height() * scale),
+            Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        self.setFixedSize(self.pixmap().size())
+        if bbox:
+            sx = self.width() / self.original_size.width()
+            sy = self.height() / self.original_size.height()
+            x, y, right, bottom = bbox
+            self.selection = QRect(round(x * sx), round(y * sy), round((right-x) * sx), round((bottom-y) * sy))
+            self.band.setGeometry(self.selection)
+            self.band.show()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -154,7 +170,21 @@ class RegionDialog(QDialog):
         self.setWindowTitle("Mark equation — drag around the original expression")
         layout = QVBoxLayout(self)
         self.selector = RegionSelector(pixmap)
-        layout.addWidget(self.selector)
+        self.resize(1000, 750)
+        toolbar = QHBoxLayout()
+        self.zoom_label = QLabel()
+        for title, callback in [("−", lambda: self.zoom(1 / 1.25)),
+                                ("+", lambda: self.zoom(1.25)),
+                                ("100%", lambda: self.set_zoom(1)), ("Fit", self.fit)]:
+            control = QPushButton(title)
+            control.clicked.connect(callback)
+            toolbar.addWidget(control)
+        toolbar.addWidget(self.zoom_label)
+        layout.addLayout(toolbar)
+        self.scroll = QScrollArea()
+        self.scroll.setWidget(self.selector)
+        layout.addWidget(self.scroll, 1)
+        self.set_zoom(self.selector.width() / pixmap.width())
         self.message = QLabel("Drag to select an equation. The original crop will be embedded in your project.")
         layout.addWidget(self.message)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -162,6 +192,18 @@ class RegionDialog(QDialog):
         buttons.accepted.connect(self.use_region)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def set_zoom(self, scale):
+        self.selector.set_zoom(scale)
+        self.zoom_label.setText(f"{self.selector.width() / self.selector.original_size.width():.0%}")
+
+    def zoom(self, factor):
+        self.set_zoom(self.selector.width() / self.selector.original_size.width() * factor)
+
+    def fit(self):
+        size = self.scroll.viewport().size()
+        original = self.selector.original_size
+        self.set_zoom(min(size.width() / original.width(), size.height() / original.height()))
 
     def use_region(self):
         try:

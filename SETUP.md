@@ -1,8 +1,17 @@
+# Workspace changes in 0.2.8
+
+- Choose **Recognize blank pages** to process the active document's empty pages. Review/Apply each result; Cancel stops the queue. Pages already containing text, equations or approvals are skipped.
+- For garbled selectable PDF text, use **Garbled PDF text? Recognize visual page** on that page, then review before replacement.
+- In **Equations → Mark region**, use **+**, **−**, **100%**, **Fit** and scrollbars to select a small expression. Marking stores an image; use the equation editor's AI action or enter its LaTeX source.
+- **Equations → Recognize page equations · AI** enables LaTeX and requests the selected page through the configured provider, after upload consent. It requires an API key/billing and cannot guarantee recognition. Offline Tesseract does not produce separate equations.
+- If export finds a missing equation reference, it opens that page and selects the equation. Click the intended position in the Text editor, return to Equations and click **Insert in text**, then export again. Reject unwanted equations explicitly instead of losing their data.
+- **Qt font diagnostic** is not the **Sinhala typing pad**. Repeated direct-input characters in Qt remain unresolved. Use the native pad for testing; if it also fails, type in Notepad and paste into the main document.
+
 For the current input failure investigation, use the separate **Windows input investigation (diagnostic only)** Actions workflow. Its Summary contains comparisons; its optional standalone EXE and instructions are described in [diagnostics/READ_ME_FIRST.md](diagnostics/READ_ME_FIRST.md). This is not a new OCR release.
 
 # Setup and use
 
-For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.7** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
+For a packaged Windows build, Python and Tesseract do not need separate installation. Follow DOWNLOAD_WINDOWS.md to download the latest successful **0.2.8** experimental artifact, extract the complete folder and launch SinhalaOCRStudio.exe. Keep `_internal` beside the EXE.
 
 ## Workspace
 
