@@ -1,0 +1,6 @@
+RapidLaTeXOCR 0.0.9: https://pypi.org/project/rapid-latex-ocr/0.0.9/
+Model source: https://github.com/RapidAI/RapidLaTeXOCR/releases/tag/v0.0.0
+ONNX conversion of the LaTeX-OCR model: https://github.com/lukas-blecher/LaTeX-OCR
+Pinned model hashes are in offline_equations.py. Observed downloaded size: approximately 171 MiB.
+RapidLaTeXOCR.txt is the actual LICENSE distributed in the 0.0.9 wheel (MIT); its package metadata labels Apache-2.0, an upstream inconsistency. LaTeX-OCR.txt includes the upstream MIT license. No separate model license was present among the downloaded assets. Upstream attribution and this discrepancy are retained; stable redistribution review remains outstanding.
+The bundled equation_smoke.png is generated from the application's renderer and contains only x=1.

@@ -12,3 +12,5 @@ packaged-smoke.json
 logs/
 test-results/
 *.spec
+
+src/sinhala_ocr/assets/equation_models/

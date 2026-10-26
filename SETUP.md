@@ -1,3 +1,15 @@
+# Offline equation recognition (0.3.0)
+
+1. Download and fully extract the latest successful **0.3.0 experimental Windows build**. Keep `_internal` beside the EXE; it contains the equation runtime and models. This build is larger because it works offline.
+2. Open a document and turn **LaTeX ON**.
+3. Choose **Equations → Mark region**. Zoom in and drag tightly around one equation, leaving a small white margin. Choose **Use region**.
+4. Local recognition starts in the equation editor. Review the proposed LaTeX against the crop and choose Yes only to use that suggestion. For an existing crop, choose **Recognize equation · Offline**.
+5. Correct any mistakes, inspect the preview, and choose **Accept**. Save the project. Export DOCX for editable supported Word equations.
+
+No API key, upload, GPU or separate installation is needed for this offline path. Model output can be wrong, especially long expressions; acceptance is always manual. Unsupported LaTeX remains visible as source with an explicit preview/export error. OFF never starts offline recognition and preserves previous equations. Automatic detection across a full mixed Sinhala page is not included; the optional AI page action remains available with upload consent.
+
+Source developers: install `requirements-equations.txt` in the project environment, then run `python scripts/fetch-equation-models.py` once while online. Subsequent inference is offline. `SINHALA_EQUATION_MODELS` can point to a directory containing all four verified model assets. Packaged users do not need these commands.
+
 # Workspace changes in 0.2.8
 
 - Choose **Recognize blank pages** to process the active document's empty pages. Review/Apply each result; Cancel stops the queue. Pages already containing text, equations or approvals are skipped.

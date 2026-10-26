@@ -1,3 +1,20 @@
+# Offline equation recognition — 0.3.0 — 2026-10-26
+
+Implemented CPU crop-to-LaTeX recognition using RapidLaTeXOCR 0.0.9 and ONNX Runtime 1.20.1. With LaTeX ON, marking a region opens the editor and starts local recognition. Existing crops have a Recognize equation · Offline button. Results require explicit review before insertion, remain drafts, and support source Undo. Accepted equations still use the existing guarded OMML exporter. Original crops and recognized source remain in saved projects. No document is uploaded by this path.
+
+The engine imports/loads lazily, validates four pinned model hashes, and supplies all model paths explicitly to disable the upstream implicit download path. LaTeX OFF and blank crops fail before loading a model. Background execution retains the original source if the editor closes or the user edits while inference runs. There is no automatic whole-page offline equation detector; select one expression with Mark region. Optional whole-page AI remains separate and consent-based.
+
+Windows CI installs the CPU dependencies, downloads and verifies approximately 171 MiB of model assets at build time, and bundles them with the EXE. Source and frozen smoke gates now execute genuine model inference on a synthetic x=1 PNG. No end-user Python, API key, model download or GPU is required by the complete Windows artifact. Model files are ignored by Git. License texts and a generated synthetic fixture are included. Python source environments require 3.11/3.12 and requirements-equations.txt; setup-cloud.sh handles these and the model fetch.
+
+Executed on Linux: **108 passed, 7 Windows-only skipped**, Ruff and pip check passed. Source smoke and a PyInstaller Linux build/frozen smoke both passed, including real offline equation recognition and DOCX export. For the Linux frozen check, test Tesseract data was copied alongside the executable and the system Tesseract binary was used; Windows CI bundles the full Windows OCR runtime. Upstream emitted four NumPy scalar-conversion deprecation warnings with pinned NumPy 1.26.4; no failing checks. Qt emitted a font-cache warning during smoke but the report passed.
+
+Synthetic model observations (not an independent accuracy benchmark):
+- x=1 → `x\,=\,1` (correct after ignoring spacing).
+- E=\frac{1}{2}mv^2 → `E\:=\:\frac{1}{2}m v^{2}` (correct expression).
+- m=\sqrt{100^2+200^2+2\times100\times200\times\frac{1}{2}} → `m\,=\,\sqrt{100^{2}+200^{2}+\,2\times100\times200\times200\times\frac{1}{2}}` (**incorrect extra ×200**).
+
+This error is retained as an observed limitation, not silently corrected. Long expressions, small scans, matrices, handwriting and mixed text need review and representative evaluation. Whole-page offline detection, held-out Sinhala A/L Physics accuracy, Windows packaged inference, Microsoft Word rendering, and genuine Helakuru tests remain pending. Earlier statements that no offline recognizer is installed are superseded for selected crops only. No Helakuru input changes are made by this milestone.
+
 # 0.2.8 workspace repair — 2026-10-26
 
 Owner reports export blocked by a missing equation marker, blank unrecognized pages, repeated Sinhala characters in the Qt Keyboard check, and legacy-looking PDF text. The preceding Windows build was reported successful by the owner; genuine input compatibility is not established.

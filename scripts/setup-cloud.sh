@@ -3,6 +3,8 @@ set -euo pipefail
 cd /workspace/Sinhala_OCR_studio
 python -m venv /workspace/ocr-venv
 /workspace/ocr-venv/bin/python -m pip install -r requirements-lock.txt
+/workspace/ocr-venv/bin/python -m pip install -r requirements-equations.txt
+/workspace/ocr-venv/bin/python scripts/fetch-equation-models.py
 /workspace/ocr-venv/bin/python -m pip install --no-deps -e .
 command -v tesseract >/dev/null || { echo 'Install Tesseract 5 using the OS package manager.' >&2; exit 1; }
 mkdir -p /workspace/ocr-tessdata

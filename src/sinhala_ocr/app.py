@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
         equations_panel = QWidget()
         equations_panel.setObjectName("outputPanel")
         eq_layout = QVBoxLayout(equations_panel)
-        equation_hint = QLabel("Offline OCR extracts text only. To recognize separate equations, use AI below (API key and upload consent required). Mark region saves a crop for manual editing or AI recognition.")
+        equation_hint = QLabel("LaTeX ON + Mark region recognizes a selected equation offline on your CPU. Review and Accept the source before Word export. Whole-page equation extraction uses the optional AI action below.")
         equation_hint.setWordWrap(True)
         equation_hint.setObjectName("muted")
         eq_layout.addWidget(equation_hint)
@@ -578,12 +578,15 @@ class MainWindow(QMainWindow):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             equation = equation_crop(BytesIO(self.preview_png), dialog.selector.source_bbox())
             self.attach_equation(equation)
-            self.edit_equation()
+            self.edit_equation(auto_recognize=self.document.latex_enabled)
 
-    def edit_equation(self):
+    def edit_equation(self, auto_recognize=False):
         index = self.equation_list.currentRow()
         if self.document and 0 <= index < len(self.document.equations):
-            EquationEditor(self.document.equations[index], self).exec()
+            editor = EquationEditor(self.document.equations[index], self)
+            if auto_recognize:
+                QTimer.singleShot(0, lambda: self.offline_equation(editor))
+            editor.exec()
             self.document.approved = False
             self.document.capture_page()
             self.refresh_equations()
@@ -688,6 +691,44 @@ class MainWindow(QMainWindow):
         session, index = self.session, self.document.active_page
         snapshot = deepcopy(self.document)
         self.background(lambda: recognize_page(snapshot, index, force_image), lambda result: self.review_candidate(session, index, result.text))
+
+    def offline_equation(self, editor):
+        if not self.document or self.busy or not editor.isVisible():
+            return
+        if not self.document.latex_enabled:
+            self.error("Turn LaTeX ON in the workspace before running offline equation recognition.")
+            return
+        import base64
+        from .offline_equations import recognize_equation
+        crop = base64.b64decode(editor.equation.image_png)
+        original = editor.source.toPlainText()
+        equation = editor.equation
+        editor.offline_button.setEnabled(False)
+        editor.message.setText("Recognizing locally… First use loads the CPU models. Your source is preserved until review.")
+        def failed(message):
+            editor.offline_button.setEnabled(True)
+            if editor.isVisible():
+                editor.message.setText(message)
+        def complete(source):
+            editor.offline_button.setEnabled(True)
+            if not editor.isVisible():
+                return
+            if editor.source.toPlainText() != original:
+                editor.message.setText("Source changed while recognizing. Your edit was preserved; run recognition again if needed.")
+                return
+            if QMessageBox.question(editor, "Review offline equation suggestion",
+                                    "Use this LaTeX suggestion? Compare it with the original image; recognition can be incorrect. Existing source can be restored with Undo.\n\n" + source,
+                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                    QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                editor.update_preview()
+                return
+            if not equation.original_latex and not original:
+                equation.original_latex = source
+            editor.source.selectAll()
+            editor.source.insertPlainText(source)
+            editor.update_preview()
+            self.mark_dirty()
+        self.background(lambda: recognize_equation(crop, enabled=True), complete, on_error=failed)
 
     def recognize_page_equations(self):
         if self.document and not self.busy:
@@ -955,6 +996,12 @@ def smoke_test(app, window):
                     native.accept()
                     report.check(native.result_text == "වස්තුවක්\nසිංහල x²",
                                  "Synthetic multiline typing differs: expected " + repr("වස්තුවක්\nසිංහල x²") + "; actual " + repr(native.result_text))
+            report.phase("offline_equation_recognition")
+            from .offline_equations import recognize_equation
+            fixture = Path(__file__).parent / "assets" / "equation_smoke.png"
+            recognized = recognize_equation(fixture.read_bytes(), enabled=True)
+            report.check(recognized.replace(r"\,", "").replace(" ", "") == "x=1",
+                         "Offline equation fixture mismatch: " + repr(recognized))
             report.phase("pdf_import_render")
             pdf = Path(folder) / "pages.pdf"
             writer = PdfWriter()

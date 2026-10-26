@@ -1,3 +1,12 @@
+## 0.3.0 offline recognition checks (manual, pending)
+
+- Disconnect networking, enable LaTeX, mark a clean equation with zoom, and confirm a reviewable source suggestion appears without credentials or uploads.
+- Repeat for a fraction, root, power and a real A/L Physics crop. Compare every term; record errors rather than accepting automatically.
+- Change source or close the editor while recognition runs; confirm the late result does not overwrite edits. Verify source Undo/Redo and project save/reopen.
+- Turn LaTeX OFF; verify normal text OCR works and offline equation recognition does not start.
+- Accept a supported result, export DOCX, and edit the equation inside Microsoft Word 2019. Confirm Sinhala context remains unchanged.
+- Verify the fully extracted build on Windows 10/11 without Python or separately installed equation dependencies. Keep Helakuru testing separate; it is not fixed by this recognizer.
+
 # 0.2.7 production input gate
 
 - [ ] Select `bad` in `bad English`, open the blank Sinhala typing pad, type වස්තුවක් with real Helakuru, insert, Undo and Redo in the document. The English suffix and original word must be preserved.
