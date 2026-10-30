@@ -98,3 +98,31 @@ def test_offline_ui_review_undo_and_changed_source_protection(tmp_path, monkeypa
     window.document = None
     window.close()
     application.processEvents()
+
+
+def test_transparent_equation_is_composited_and_padded(monkeypatch):
+    image = Image.new('RGBA', (60, 40), (0, 0, 0, 0))
+    image.putpixel((20, 20), (0, 0, 0, 255))
+    data = BytesIO()
+    image.save(data, 'PNG')
+    def engine(png):
+        with Image.open(BytesIO(png)) as crop:
+            assert crop.size == (84, 64)
+            assert crop.convert('RGB').getpixel((0, 0)) == (255, 255, 255)
+            assert crop.convert('RGB').getpixel((32, 32)) == (0, 0, 0)
+        return 'x=1', 0
+    monkeypatch.setattr(offline, 'load_engine', lambda _: engine)
+    assert offline.recognize_equation(data.getvalue(), enabled=True) == 'x=1'
+
+
+def test_equation_action_explains_missing_selection_and_busy_state(tmp_path, monkeypatch):
+    from test_workspace import make_window
+    app, window, errors = make_window(tmp_path, monkeypatch)
+    window.recognize_selected_equation()
+    assert 'First select' in errors[-1]
+    window.busy = True
+    window.recognize_selected_equation()
+    assert 'Another operation' in errors[-1]
+    window.busy = False
+    window.close()
+    app.processEvents()

@@ -1,3 +1,11 @@
+## 0.3.1 quick image workflow (pending on real Windows)
+
+- Copy a Snipping Tool crop and paste via button/Ctrl+V in Paste / drop image; verify preview and resolution.
+- Drag a local PNG/JPEG into that dialog and also test Choose image. Verify browser links are rejected without downloads.
+- Recognize Sinhala+English text, review, edit and export UTF-8 TXT and DOCX; compare against the crop. Save/reopen the project and confirm its image remains available after restarting.
+- Choose Single equation for a formula crop and verify offline source review, Accept and editable Word export. Also test the visible Equations-tab offline action with no selection, LaTeX OFF and another task running.
+- Verify the version header is 0.3.1 and the complete build folder is extracted. Ordinary text-editor Ctrl+V and Helakuru behavior must be tested separately.
+
 ## 0.3.0 offline recognition checks (manual, pending)
 
 - Disconnect networking, enable LaTeX, mark a clean equation with zoom, and confirm a reviewable source suggestion appears without credentials or uploads.

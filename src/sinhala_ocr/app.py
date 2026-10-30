@@ -103,7 +103,8 @@ class MainWindow(QMainWindow):
         self.theme.currentTextChanged.connect(self.set_theme)
         header.addWidget(self.theme)
         layout.addLayout(header)
-        actions = row(button("＋ Import files", self.open_document, "primary"),
+        actions = row(button("Paste / drop image", self.quick_image, "primary"),
+                      button("＋ Import files", self.open_document),
                       button("Recognize page", self.recognize),
                       button("Recognize blank pages", self.recognize_blank_pages),
                       button("✦ Advanced OCR", self.advanced_ocr, "ai"))
@@ -195,6 +196,7 @@ class MainWindow(QMainWindow):
         equation_hint.setObjectName("muted")
         eq_layout.addWidget(equation_hint)
         eq_layout.addLayout(row(button("Add equation", self.add_equation), button("Mark region", self.mark_equation)))
+        eq_layout.addWidget(button("Recognize selected equation · Offline", self.recognize_selected_equation, "primary"))
         eq_layout.addWidget(button("Recognize page equations · AI", self.recognize_page_equations, "ai"))
         self.equation_list = QListWidget()
         self.equation_list.itemDoubleClicked.connect(lambda _: self.edit_equation())
@@ -439,6 +441,32 @@ class MainWindow(QMainWindow):
             self.document.approved = False
             self.document.capture_page()
             self.mark_dirty()
+
+    def quick_image(self):
+        if self.busy:
+            return
+        from .image_intake import ImageIntakeDialog
+        dialog = ImageIntakeDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            try:
+                self.open_captured_image(dialog.image, equation=dialog.mode.currentIndex() == 1)
+            except (ValueError, OSError) as error:
+                self.error(str(error))
+
+    def open_captured_image(self, image, *, equation=False):
+        from .image_intake import persist_image
+        source = persist_image(image)
+        document = import_document(source)
+        document.latex_enabled = equation
+        self.display_document(document)
+        self.mark_dirty()
+        if equation:
+            crop = equation_crop(source, (0, 0, image.width(), image.height()))
+            self.attach_equation(crop)
+            self.output_tabs.setCurrentIndex(1)
+            self.edit_equation(auto_recognize=True)
+        else:
+            self.recognize(force_image=True)
 
     def open_document(self):
         if self.busy:
@@ -692,12 +720,32 @@ class MainWindow(QMainWindow):
         snapshot = deepcopy(self.document)
         self.background(lambda: recognize_page(snapshot, index, force_image), lambda result: self.review_candidate(session, index, result.text))
 
+    def recognize_selected_equation(self):
+        if self.busy:
+            self.error("Another operation is running. Wait for it to finish, then recognize the equation.")
+            return
+        index = self.equation_list.currentRow()
+        if not self.document or not 0 <= index < len(self.document.equations):
+            self.error("First select an equation in the list, use Mark region, or paste a crop through Paste / drop image → Single equation.")
+            return
+        if not self.document.equations[index].image_png:
+            self.error("This equation has no image to recognize. Use Mark region or paste a cropped equation image.")
+            return
+        self.edit_equation(auto_recognize=True)
+
     def offline_equation(self, editor):
-        if not self.document or self.busy or not editor.isVisible():
+        if not self.document or not editor.isVisible():
+            return
+        if self.busy:
+            editor.message.setText("Another operation is running. Wait for it to finish, then click Recognize equation · Offline.")
             return
         if not self.document.latex_enabled:
-            self.error("Turn LaTeX ON in the workspace before running offline equation recognition.")
-            return
+            if QMessageBox.question(editor, "Enable offline equation recognition?",
+                                    "Turn LaTeX ON for this document and recognize this crop locally? No image is uploaded.",
+                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                    QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                return
+            self.latex_toggle.setChecked(True)
         import base64
         from .offline_equations import recognize_equation
         crop = base64.b64decode(editor.equation.image_png)
@@ -996,6 +1044,23 @@ def smoke_test(app, window):
                     native.accept()
                     report.check(native.result_text == "වස්තුවක්\nසිංහල x²",
                                  "Synthetic multiline typing differs: expected " + repr("වස්තුවක්\nසිංහල x²") + "; actual " + repr(native.result_text))
+            report.phase("image_intake")
+            from .image_intake import ImageIntakeDialog, persist_image
+            from PySide6.QtCore import QMimeData
+            from PySide6.QtGui import QImage
+            intake = ImageIntakeDialog(window)
+            mime = QMimeData()
+            mime.setImageData(QImage(str(image)))
+            report.check(intake.consume(mime), "Synthetic pasted image was not accepted")
+            capture = persist_image(intake.image, Path(folder) / "captures")
+            report.check(capture.is_file(), "Pasted image was not persisted")
+            captured_document = import_document(capture)
+            captured_document.text = "සිංහල වස්තුවක් English x²"
+            destination = Path(folder) / "capture.txt"
+            export_document(captured_document, destination)
+            report.check(destination.read_text(encoding="utf-8") == captured_document.text,
+                         "Captured-image TXT export changed Unicode text")
+            intake.close()
             report.phase("offline_equation_recognition")
             from .offline_equations import recognize_equation
             fixture = Path(__file__).parent / "assets" / "equation_smoke.png"

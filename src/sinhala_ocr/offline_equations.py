@@ -6,7 +6,7 @@ from threading import Lock
 import hashlib
 import os
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from .equations import EquationError
 
@@ -56,12 +56,19 @@ def recognize_equation(png: bytes, *, enabled: bool) -> str:
     with Image.open(BytesIO(png)) as image:
         if image.width * image.height > 12_000_000:
             raise EquationError("Equation crop exceeds 12 megapixels. Select just one expression.")
-        gray = image.convert('L')
+        rgba = image.convert('RGBA')
+        paper = Image.new('RGBA', image.size, 'white')
+        paper.alpha_composite(rgba)
+        gray = paper.convert('L')
         low, high = gray.getextrema()
         if high - low < 10:
             raise EquationError("The selected region is blank. Select the printed equation.")
+        # Tight screenshot crops need a margin; flatten alpha before inference.
+        normalized = ImageOps.expand(paper.convert('RGB'), border=12, fill='white')
+        output = BytesIO()
+        normalized.save(output, 'PNG')
     with LOCK:
-        source, _elapsed = load_engine(model_directory())(png)
+        source, _elapsed = load_engine(model_directory())(output.getvalue())
     if not isinstance(source, str) or not source.strip() or len(source) > 4000:
         raise EquationError("No usable equation source was returned. Select a tighter crop or enter LaTeX manually.")
     # Keep unsupported output as a reviewable draft; rendering/export validate separately.

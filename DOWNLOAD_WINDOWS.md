@@ -1,3 +1,15 @@
+# Paste a crop and export text — 0.3.1
+
+1. In Windows Snipping Tool, capture the text area and copy the image.
+2. In Sinhala OCR Studio choose **Paste / drop image**, then **Paste image** (or Ctrl+V inside that dialog). Alternatively drop one local image file or choose **Choose image**.
+3. Leave **Sinhala + English text → TXT / DOCX** selected and click **Open and recognize**.
+4. Compare the OCR suggestion with the image, apply it, and correct any mistakes in the editor.
+5. Choose **Export document**, select **Unicode text (*.txt)** or **Word**, and save. Save project separately to retain the editable workspace.
+
+For a cropped formula, choose **Single equation → editable LaTeX / DOCX** in step 3. Offline recognition starts in its equation editor; review the proposed source, correct it and Accept before exporting Word. For previously marked equations use the visible **Equations → Recognize selected equation · Offline** button. If prompted, confirm LaTeX ON. No API key or image upload is needed for offline recognition.
+
+Look for **v0.3.1** in the application title/header after downloading the latest successful experimental build. The capture is retained under the application's local data directory in `captured-images`; do not delete it while a saved project still references it. Captured images are not embedded into the project as full-page sources and moving a project to another computer requires retaining its source image. Clipboard is read only when Paste is requested; Ctrl+V in the ordinary text editor remains normal text paste.
+
 # Offline equation recognition (0.3.0)
 
 1. Download and fully extract the latest successful **0.3.0 experimental Windows build**. Keep `_internal` beside the EXE; it contains the equation runtime and models. This build is larger because it works offline.
